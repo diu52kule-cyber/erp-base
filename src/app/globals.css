@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+body { @apply bg-neutral-50 text-neutral-900 antialiased; }
+
+/* ── Dark mode ──────────────────────────────────────────────── */
+.dark { color-scheme: dark; }
+.dark body { background-color: #0a0a0a; color: #fafafa; }
+
+.dark .bg-white            { background-color: #171717 !important; }
+.dark .bg-neutral-50       { background-color: #0f0f0f !important; }
+.dark .bg-neutral-100      { background-color: #262626 !important; }
+.dark .bg-neutral-900      { background-color: #fafafa !important; }
+.dark .text-white          { color: #0a0a0a !important; }
+
+.dark .border-neutral-100  { border-color: #262626 !important; }
+.dark .border-neutral-200  { border-color: #333333 !important; }
+.dark .border-neutral-300  { border-color: #404040 !important; }
+
+.dark .text-neutral-900    { color: #fafafa !important; }
+.dark .text-neutral-700    { color: #d4d4d4 !important; }
+.dark .text-neutral-600    { color: #a3a3a3 !important; }
+.dark .text-neutral-500    { color: #737373 !important; }
+.dark .text-neutral-400    { color: #525252 !important; }
+
+.dark .hover\:bg-neutral-50:hover  { background-color: #1a1a1a !important; }
+.dark .hover\:bg-neutral-100:hover { background-color: #262626 !important; }
+.dark .hover\:bg-neutral-700:hover { background-color: #d4d4d4 !important; }
+.dark .hover\:text-neutral-900:hover { color: #fafafa !important; }
+
+.dark .divide-neutral-100 > * + * { border-color: #262626 !important; }
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #262626 !important;
+  border-color: #404040 !important;
+  color: #fafafa !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #737373 !important; }
+
+.dark .border-dashed { border-color: #333333 !important; }
+
+/* Keep status/badge colours readable in dark */
+.dark .bg-green-50  { background-color: #052e16 !important; }
+.dark .bg-red-50    { background-color: #2d0a0a !important; }
+.dark .bg-amber-50  { background-color: #2d1c00 !important; }
+.dark .bg-blue-50   { background-color: #0a1628 !important; }
+.dark .bg-purple-50 { background-color: #1a0a2d !important; }
+.dark .bg-orange-50 { background-color: #2d1200 !important; }
+.dark .bg-indigo-50 { background-color: #0a0a28 !important; }
