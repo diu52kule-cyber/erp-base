@@ -4,6 +4,15 @@ import { getOrgContext } from '@/lib/entitlements';
 import { deriveSupplyType, splitGst } from '@/lib/types/accounting';
 import type { CreateInvoiceInput } from '@/lib/types/billing';
 
+export async function GET() {
+  const ctx = await getOrgContext();
+  if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const supabase = createClient();
+  const { data } = await supabase.from('invoices').select('id,invoice_number,customer_name,total,status,issue_date')
+    .eq('org_id', ctx.org.id).order('created_at', { ascending: false }).limit(100);
+  return NextResponse.json(data ?? []);
+}
+
 export async function POST(req: NextRequest) {
   const ctx = await getOrgContext();
   if (!ctx?.org || !ctx.enabledModules.has('billing')) {
