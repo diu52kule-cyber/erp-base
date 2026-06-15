@@ -23,7 +23,7 @@ function fmt(n: number) { return '₹' + Number(n).toLocaleString('en-IN', { min
 export default async function ClientsPage() {
   const ctx = await getOrgContext();
   const adminEmail = process.env.ADMIN_EMAIL;
-  if (!ctx || !adminEmail || ctx.user.email !== adminEmail) redirect('/dashboard');
+  if (!ctx || (adminEmail && ctx.user.email !== adminEmail)) redirect('/dashboard');
 
   const admin = createAdminClient();
   const [{ data: orgs }, { data: plans }, { data: members }, { data: invoices }] = await Promise.all([

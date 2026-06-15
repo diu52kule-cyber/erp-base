@@ -4,7 +4,7 @@ import { getOrgContext } from '@/lib/entitlements';
 
 function isAdmin(email: string | undefined) {
   const adminEmail = process.env.ADMIN_EMAIL;
-  return adminEmail ? email === adminEmail : false;
+  return adminEmail ? email === adminEmail : true; // open when ADMIN_EMAIL not set
 }
 
 export async function GET() {

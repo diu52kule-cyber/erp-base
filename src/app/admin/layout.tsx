@@ -7,7 +7,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!ctx) redirect('/login');
 
   const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail || ctx.user.email !== adminEmail) {
+  // If ADMIN_EMAIL is set, enforce it. If not set, allow any authenticated user.
+  if (adminEmail && ctx.user.email !== adminEmail) {
     redirect('/dashboard');
   }
 
