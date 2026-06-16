@@ -5,50 +5,118 @@
 :root { color-scheme: light; }
 body { @apply bg-neutral-50 text-neutral-900 antialiased; }
 
-/* ── Dark mode ──────────────────────────────────────────────── */
-.dark { color-scheme: dark; }
-.dark body { background-color: #0a0a0a; color: #fafafa; }
+/* ───────────────────────────────────────────────────────────────
+   Dark mode (class strategy). We retrofit the app's light utility
+   classes to dark equivalents centrally so every page stays in sync.
+   Key rules:
+   • Surfaces (bg-neutral-50/white/100) go progressively lighter-dark.
+   • Muted text (neutral-300..600) is LIGHTENED in dark mode and keeps
+     its prominence order (400 = most muted … 900 = brightest).
+   • neutral-900 surfaces invert to light (primary buttons/selected
+     cards), so text-white inverts to dark to stay readable on them.
+   • Status/badge text is lightened so it reads on darkened tints.
+   ─────────────────────────────────────────────────────────────── */
+.dark { color-scheme: dark; --tw-ring-offset-color: #0a0a0a; }
+.dark body { background-color: #0a0a0a; color: #ededed; }
 
-.dark .bg-white            { background-color: #171717 !important; }
-.dark .bg-neutral-50       { background-color: #0f0f0f !important; }
-.dark .bg-neutral-100      { background-color: #262626 !important; }
-.dark .bg-neutral-900      { background-color: #fafafa !important; }
-.dark .text-white          { color: #0a0a0a !important; }
+/* ── Surfaces ── */
+.dark .bg-neutral-50  { background-color: #0a0a0a !important; } /* app background */
+.dark .bg-white       { background-color: #181818 !important; } /* cards / panels */
+.dark .bg-neutral-100 { background-color: #242424 !important; } /* subtle fills */
+.dark .bg-neutral-200 { background-color: #383838 !important; } /* tracks, off-states */
+.dark .bg-neutral-300 { background-color: #444444 !important; }
 
-.dark .border-neutral-100  { border-color: #262626 !important; }
-.dark .border-neutral-200  { border-color: #333333 !important; }
-.dark .border-neutral-300  { border-color: #404040 !important; }
+/* Inverted accents: dark-in-light → light-in-dark (primary buttons) */
+.dark .bg-neutral-900 { background-color: #fafafa !important; }
+.dark .text-white     { color: #0a0a0a !important; }
 
-.dark .text-neutral-900    { color: #fafafa !important; }
-.dark .text-neutral-700    { color: #d4d4d4 !important; }
-.dark .text-neutral-600    { color: #a3a3a3 !important; }
-.dark .text-neutral-500    { color: #737373 !important; }
-.dark .text-neutral-400    { color: #525252 !important; }
+/* ── Neutral text (lightened, prominence order preserved) ── */
+.dark .text-neutral-900 { color: #ededed !important; }
+.dark .text-neutral-800 { color: #dadada !important; }
+.dark .text-neutral-700 { color: #cfcfcf !important; }
+.dark .text-neutral-600 { color: #b5b5b5 !important; }
+.dark .text-neutral-500 { color: #9e9e9e !important; }
+.dark .text-neutral-400 { color: #868686 !important; } /* was #525252 — too dark */
+.dark .text-neutral-300 { color: #707070 !important; }
 
-.dark .hover\:bg-neutral-50:hover  { background-color: #1a1a1a !important; }
-.dark .hover\:bg-neutral-100:hover { background-color: #262626 !important; }
-.dark .hover\:bg-neutral-700:hover { background-color: #d4d4d4 !important; }
-.dark .hover\:text-neutral-900:hover { color: #fafafa !important; }
+/* ── Borders ── */
+.dark .border-neutral-100 { border-color: #242424 !important; }
+.dark .border-neutral-200 { border-color: #333333 !important; }
+.dark .border-neutral-300 { border-color: #404040 !important; }
+.dark .border-neutral-400 { border-color: #525252 !important; }
+.dark .border-neutral-700 { border-color: #525252 !important; }
+.dark .border-neutral-900 { border-color: #d4d4d4 !important; } /* active selection */
+.dark .border-dashed      { border-color: #3a3a3a !important; }
 
-.dark .divide-neutral-100 > * + * { border-color: #262626 !important; }
+/* ── Dividers ── */
+.dark .divide-neutral-100 > * + * { border-color: #242424 !important; }
+.dark .divide-neutral-200 > * + * { border-color: #333333 !important; }
 
+/* ── Hover states ── */
+.dark .hover\:bg-neutral-50:hover   { background-color: #1f1f1f !important; }
+.dark .hover\:bg-neutral-100:hover  { background-color: #262626 !important; }
+.dark .hover\:bg-neutral-200:hover  { background-color: #2e2e2e !important; }
+.dark .hover\:bg-neutral-700:hover  { background-color: #e5e5e5 !important; } /* primary btn hover */
+.dark .hover\:text-neutral-900:hover { color: #ededed !important; }
+.dark .hover\:text-neutral-600:hover { color: #b5b5b5 !important; }
+.dark .hover\:border-neutral-300:hover { border-color: #525252 !important; }
+.dark .hover\:border-neutral-400:hover { border-color: #666666 !important; }
+
+/* ── Focus rings ── */
+.dark .ring-neutral-900 { --tw-ring-color: #d4d4d4 !important; }
+.dark .ring-neutral-400 { --tw-ring-color: #525252 !important; }
+.dark .ring-neutral-200 { --tw-ring-color: #404040 !important; }
+
+/* ── Form controls ── */
 .dark input,
 .dark select,
 .dark textarea {
-  background-color: #262626 !important;
+  background-color: #242424 !important;
   border-color: #404040 !important;
-  color: #fafafa !important;
+  color: #ededed !important;
 }
 .dark input::placeholder,
-.dark textarea::placeholder { color: #737373 !important; }
+.dark textarea::placeholder { color: #868686 !important; }
+.dark .placeholder-neutral-500::placeholder { color: #868686 !important; }
 
-.dark .border-dashed { border-color: #333333 !important; }
+/* ── Status / badge backgrounds (muted dark tints) ── */
+.dark .bg-green-50   { background-color: #0c2818 !important; }
+.dark .bg-green-100  { background-color: #0d3320 !important; }
+.dark .bg-red-50     { background-color: #2a0d0d !important; }
+.dark .bg-amber-50   { background-color: #2a2008 !important; }
+.dark .bg-yellow-50  { background-color: #2a2408 !important; }
+.dark .bg-blue-50    { background-color: #0c1a2e !important; }
+.dark .bg-indigo-50  { background-color: #14122e !important; }
+.dark .bg-purple-50  { background-color: #1f1030 !important; }
+.dark .bg-orange-50  { background-color: #2a1608 !important; }
 
-/* Keep status/badge colours readable in dark */
-.dark .bg-green-50  { background-color: #052e16 !important; }
-.dark .bg-red-50    { background-color: #2d0a0a !important; }
-.dark .bg-amber-50  { background-color: #2d1c00 !important; }
-.dark .bg-blue-50   { background-color: #0a1628 !important; }
-.dark .bg-purple-50 { background-color: #1a0a2d !important; }
-.dark .bg-orange-50 { background-color: #2d1200 !important; }
-.dark .bg-indigo-50 { background-color: #0a0a28 !important; }
+/* ── Status / badge text (lightened for contrast on dark tints) ── */
+.dark .text-green-500, .dark .text-green-600, .dark .text-green-700,
+.dark .text-green-800, .dark .text-green-900 { color: #4ade80 !important; }
+.dark .text-red-400, .dark .text-red-500, .dark .text-red-600,
+.dark .text-red-700  { color: #f87171 !important; }
+.dark .text-amber-500, .dark .text-amber-600, .dark .text-amber-700,
+.dark .text-amber-800 { color: #fbbf24 !important; }
+.dark .text-yellow-600, .dark .text-yellow-700 { color: #facc15 !important; }
+.dark .text-blue-600, .dark .text-blue-700,
+.dark .text-blue-800, .dark .text-blue-900 { color: #60a5fa !important; }
+.dark .text-indigo-600, .dark .text-indigo-700 { color: #a5b4fc !important; }
+.dark .text-purple-700 { color: #c084fc !important; }
+.dark .text-orange-700 { color: #fb923c !important; }
+
+/* ── Colored borders (muted so they don't glow on dark tints) ── */
+.dark .border-green-100, .dark .border-green-200, .dark .border-green-300 { border-color: #14532d !important; }
+.dark .border-amber-200, .dark .border-amber-300 { border-color: #422006 !important; }
+.dark .border-blue-100,  .dark .border-blue-200  { border-color: #1e3a5f !important; }
+.dark .border-red-200,   .dark .border-red-800   { border-color: #4c1414 !important; }
+
+/* ── Admin auth screen: a permanently-dark design; opt out of inversion
+   so it looks identical in light and dark themes. ── */
+.dark .admin-dark .bg-neutral-900   { background-color: #171717 !important; } /* card stays dark */
+.dark .admin-dark .text-white       { color: #fafafa !important; }            /* headings stay light */
+.dark .admin-dark .bg-white         { background-color: #fafafa !important; } /* sign-in button stays light */
+.dark .admin-dark .text-neutral-900 { color: #171717 !important; }            /* its label stays dark */
+.dark .admin-dark .hover\:bg-neutral-100:hover { background-color: #e5e5e5 !important; }
+.dark .admin-dark input,
+.dark .admin-dark select,
+.dark .admin-dark textarea { background-color: #262626 !important; color: #fafafa !important; border-color: #404040 !important; }
