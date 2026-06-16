@@ -16,6 +16,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/clients" className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900">
             <span className="text-lg">🏢</span> Clients
           </Link>
+          <Link href="/admin/settings" className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900">
+            <span className="text-lg">⚙️</span> Settings
+          </Link>
         </nav>
         <div className="p-4 border-t border-neutral-100 space-y-2">
           <Link href="/dashboard" className="block text-xs text-neutral-400 hover:text-neutral-600">← Back to dashboard</Link>

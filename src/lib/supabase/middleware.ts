@@ -42,8 +42,8 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  // Dashboard routes: require Supabase session
-  if (!user && pathname.startsWith("/dashboard")) {
+  // Dashboard + paywall routes: require Supabase session
+  if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/locked"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);

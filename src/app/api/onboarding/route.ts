@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { ALL_MODULE_KEYS, presetFor } from '@/lib/modules';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -20,8 +21,19 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+  // Smart preset: enable the modules relevant to this business type, disable the rest.
+  const presetKeys = new Set(presetFor(business_type));
+  const entitlementRows = ALL_MODULE_KEYS.map((key) => ({
+    org_id: orgId,
+    module_key: key,
+    enabled: presetKeys.has(key),
+  }));
+
   // Run all extras in parallel
   await Promise.all([
+    // Seed module entitlements from the business-type preset
+    admin.from('entitlements').upsert(entitlementRows, { onConflict: 'org_id,module_key' }),
+
     // Store city + phone on org
     (city || phone) && admin.from('organizations').update({ city: city || null, phone: phone || null }).eq('id', orgId),
 

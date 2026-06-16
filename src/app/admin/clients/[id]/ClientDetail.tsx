@@ -92,8 +92,9 @@ export default function ClientDetail({ orgId, orgName, initialPlan, initialModul
           </div>
           <div>
             <label className="text-xs text-neutral-500">Amount (₹/period)</label>
-            <input type="number" value={plan.amount} onChange={(e) => setPlanField('amount', parseFloat(e.target.value))}
+            <input type="number" value={plan.amount} onChange={(e) => setPlanField('amount', parseFloat(e.target.value) || 0)}
               className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+            <p className="mt-1 text-[11px] text-neutral-400">This is the price the client pays on the paywall via Razorpay.</p>
           </div>
           <div>
             <label className="text-xs text-neutral-500">Next Billing Date</label>
@@ -146,7 +147,7 @@ export default function ClientDetail({ orgId, orgName, initialPlan, initialModul
           ))}
         </div>
         <p className="mt-3 text-xs text-neutral-400">
-          Note: module gating takes effect when you enable entitlement-checking in <code className="font-mono">src/lib/entitlements.ts</code>.
+          Module gating is live — disabled modules are hidden from this client’s sidebar immediately.
         </p>
       </div>
 
