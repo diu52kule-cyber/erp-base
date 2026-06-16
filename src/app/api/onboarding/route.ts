@@ -22,8 +22,13 @@ export async function POST(req: NextRequest) {
   const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   // Smart preset: enable the modules relevant to this business type, disable the rest.
+  // Only entitle module keys that exist in the catalog (entitlements has an FK to modules),
+  // so onboarding stays robust even if the catalog hasn't been fully synced yet.
   const presetKeys = new Set(presetFor(business_type));
-  const entitlementRows = ALL_MODULE_KEYS.map((key) => ({
+  const { data: catalog } = await admin.from('modules').select('key');
+  const validKeys = new Set((catalog ?? []).map((m) => m.key as string));
+  const keysToSeed = (validKeys.size > 0 ? [...validKeys] : ALL_MODULE_KEYS);
+  const entitlementRows = keysToSeed.map((key) => ({
     org_id: orgId,
     module_key: key,
     enabled: presetKeys.has(key),
