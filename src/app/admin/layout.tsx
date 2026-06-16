@@ -1,17 +1,7 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getOrgContext } from '@/lib/entitlements';
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const ctx = await getOrgContext();
-  if (!ctx) redirect('/login');
-
-  const adminEmail = process.env.ADMIN_EMAIL;
-  // If ADMIN_EMAIL is set, enforce it. If not set, allow any authenticated user.
-  if (adminEmail && ctx.user.email !== adminEmail) {
-    redirect('/dashboard');
-  }
-
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Auth is enforced by middleware (erp_admin_session cookie check)
   return (
     <div className="flex min-h-screen bg-neutral-50">
       <aside className="w-56 shrink-0 border-r border-neutral-200 bg-white flex flex-col">
@@ -27,11 +17,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span className="text-lg">🏢</span> Clients
           </Link>
         </nav>
-        <div className="p-4 border-t border-neutral-100">
-          <Link href="/dashboard" className="text-xs text-neutral-400 hover:text-neutral-600">← Back to dashboard</Link>
+        <div className="p-4 border-t border-neutral-100 space-y-2">
+          <Link href="/dashboard" className="block text-xs text-neutral-400 hover:text-neutral-600">← Back to dashboard</Link>
+          <AdminLogout />
         </div>
       </aside>
       <main className="flex-1 p-8 overflow-auto">{children}</main>
     </div>
+  );
+}
+
+function AdminLogout() {
+  return (
+    <form action="/api/admin/auth/logout" method="POST">
+      <button type="submit" className="text-xs text-red-400 hover:text-red-600">Sign out</button>
+    </form>
   );
 }

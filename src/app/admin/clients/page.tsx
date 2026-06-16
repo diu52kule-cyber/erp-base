@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getOrgContext } from '@/lib/entitlements';
-import { redirect } from 'next/navigation';
 
 const PLAN_COLORS: Record<string, string> = {
   trial:    'bg-yellow-50 text-yellow-700',
@@ -21,10 +19,6 @@ const STATUS_COLORS: Record<string, string> = {
 function fmt(n: number) { return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 
 export default async function ClientsPage() {
-  const ctx = await getOrgContext();
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!ctx || (adminEmail && ctx.user.email !== adminEmail)) redirect('/dashboard');
-
   const admin = createAdminClient();
   const [{ data: orgs }, { data: plans }, { data: members }, { data: invoices }] = await Promise.all([
     admin.from('organizations').select('id,name,business_type,created_at').order('created_at', { ascending: false }),

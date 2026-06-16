@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getOrgContext } from '@/lib/entitlements';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { MODULES } from '@/lib/modules';
 import ClientDetail from './ClientDetail';
@@ -12,10 +11,6 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 export default async function ClientDetailPage({ params }: { params: { id: string } }) {
-  const ctx = await getOrgContext();
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!ctx || (adminEmail && ctx.user.email !== adminEmail)) redirect('/dashboard');
-
   const admin = createAdminClient();
   const { id } = params;
 

@@ -1,15 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getOrgContext } from '@/lib/entitlements';
+import { isAdminRequest } from '@/lib/adminAuth';
 
-function isAdmin(email: string | undefined) {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  return adminEmail ? email === adminEmail : true; // open when ADMIN_EMAIL not set
-}
-
-export async function GET() {
-  const ctx = await getOrgContext();
-  if (!ctx || !isAdmin(ctx.user.email)) {
+export async function GET(req: NextRequest) {
+  if (!isAdminRequest(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -22,9 +16,7 @@ export async function GET() {
     admin.from('entitlements').select('org_id,module_key,enabled').eq('enabled', true),
   ]);
 
-  // Count invoices and revenue per org
-  const { data: invoiceStats } = await admin.from('invoices')
-    .select('org_id,total,status');
+  const { data: invoiceStats } = await admin.from('invoices').select('org_id,total,status');
 
   const planMap = Object.fromEntries((plans ?? []).map((p) => [p.org_id, p]));
   const memberCount = (members ?? []).reduce<Record<string, number>>((acc, m) => {

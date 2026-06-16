@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getOrgContext } from '@/lib/entitlements';
+import { isAdminRequest } from '@/lib/adminAuth';
 import { MODULES } from '@/lib/modules';
 
-function isAdmin(email: string | undefined) {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  return adminEmail ? email === adminEmail : true; // open when ADMIN_EMAIL not set
-}
-
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const ctx = await getOrgContext();
-  if (!ctx || !isAdmin(ctx.user.email)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isAdminRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const admin = createAdminClient();
   const { id } = params;
@@ -24,7 +18,6 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     admin.from('employees').select('id').eq('org_id', id),
   ]);
 
-  // Get emails for members
   const userIds = (members ?? []).map((m) => m.user_id);
   const { data: { users } = { users: [] } } = userIds.length
     ? await admin.auth.admin.listUsers()
@@ -33,7 +26,6 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const enabledModules = new Set((entitlements ?? []).filter((e) => e.enabled).map((e) => e.module_key));
   const allModules = MODULES.map((m) => ({ ...m, enabled: enabledModules.has(m.key) }));
-
   const revenue = (invoices ?? []).filter((i) => i.status === 'paid').reduce((s, i) => s + Number(i.total), 0);
 
   return NextResponse.json({
@@ -50,14 +42,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const ctx = await getOrgContext();
-  if (!ctx || !isAdmin(ctx.user.email)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!isAdminRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const admin = createAdminClient();
   const { id } = params;
   const body = await req.json();
 
-  // Update plan
   if (body.plan) {
     await admin.from('org_plans').upsert({
       org_id: id,
@@ -66,7 +56,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }, { onConflict: 'org_id' });
   }
 
-  // Toggle a module
   if (body.module_key !== undefined) {
     await admin.from('entitlements').upsert({
       org_id: id,
@@ -75,7 +64,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }, { onConflict: 'org_id,module_key' });
   }
 
-  // Enable/disable all modules at once
   if (body.all_modules !== undefined) {
     const rows = MODULES.map((m) => ({ org_id: id, module_key: m.key, enabled: body.all_modules }));
     await admin.from('entitlements').upsert(rows, { onConflict: 'org_id,module_key' });

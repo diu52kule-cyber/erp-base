@@ -30,9 +30,20 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isProtected = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
 
-  if (!user && isProtected) {
+  // Admin routes: check erp_admin_session cookie (independent of Supabase auth)
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+    const adminToken = request.cookies.get("erp_admin_session")?.value;
+    if (!adminToken) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return NextResponse.redirect(url);
+    }
+    return response;
+  }
+
+  // Dashboard routes: require Supabase session
+  if (!user && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
