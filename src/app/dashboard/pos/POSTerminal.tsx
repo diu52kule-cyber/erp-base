@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 
 type Product = { id: string; name: string; sku: string; unit_price: number; gst_rate: number; stock_qty: number; category?: string };
 type CartItem = Product & { qty: number };
@@ -18,9 +18,40 @@ export default function POSTerminal({ sessionId, products }: { sessionId: string
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string|null>(null);
 
+  const searchRef = useRef<HTMLInputElement>(null);
+  const tenderRef = useRef<HTMLInputElement>(null);
+
   const filtered = useMemo(() =>
-    products.filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())),
+    products.filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku ?? '').toLowerCase().includes(search.toLowerCase())),
     [products, search]);
+
+  // Keep the search box focused on the POS screen (also enables barcode scanners)
+  useEffect(() => { if (screen === 'pos') searchRef.current?.focus(); }, [screen]);
+  useEffect(() => { if (screen === 'tender' && payMethod === 'cash') tenderRef.current?.focus(); }, [screen, payMethod]);
+  // Enter on the receipt screen starts a new order
+  useEffect(() => {
+    if (screen !== 'receipt') return;
+    const h = (e: KeyboardEvent) => { if (e.key === 'Enter') setScreen('pos'); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [screen]);
+
+  function onSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const q = search.trim().toLowerCase();
+      if (q) {
+        // Exact SKU match first (barcode scan), else top filtered result
+        const exact = products.find((p) => (p.sku ?? '').toLowerCase() === q);
+        const pick = exact ?? filtered[0];
+        if (pick) { addToCart(pick); setSearch(''); }
+      } else if (cart.length) {
+        setScreen('tender');
+      }
+    } else if (e.key === 'Escape') {
+      setSearch('');
+    }
+  }
 
   const subtotal   = cart.reduce((s, i) => s + i.unit_price * i.qty, 0);
   const gstAmount  = cart.reduce((s, i) => s + i.unit_price * i.qty * (i.gst_rate / 100), 0);
@@ -112,8 +143,16 @@ export default function POSTerminal({ sessionId, products }: { sessionId: string
           </div>
           {payMethod === 'cash' && (
             <div>
-              <label className="text-sm text-neutral-600">Cash Tendered</label>
-              <input type="number" value={tendered} onChange={(e) => setTendered(e.target.value)}
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-neutral-600">Cash Tendered</label>
+                <button type="button" onClick={() => setTendered(total.toFixed(2))}
+                  className="rounded-md border border-neutral-200 px-2 py-0.5 text-xs hover:bg-neutral-50">Exact</button>
+              </div>
+              <input ref={tenderRef} type="number" value={tendered} onChange={(e) => setTendered(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !(tenderedN < total && tenderedN > 0)) checkout();
+                  if (e.key === 'Escape') setScreen('pos');
+                }}
                 placeholder="0.00"
                 className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-3 text-lg text-right focus:outline-none focus:ring-2 focus:ring-neutral-900" />
               {tenderedN >= total && (
@@ -138,8 +177,11 @@ export default function POSTerminal({ sessionId, products }: { sessionId: string
     <div className="flex h-[calc(100vh-120px)] gap-4">
       {/* Product grid */}
       <div className="flex-1 flex flex-col gap-3">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…"
-          className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+        <div>
+          <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={onSearchKey}
+            placeholder="Search or scan barcode…  (Enter adds · Esc clears)" autoFocus
+            className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+        </div>
         <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 content-start">
           {filtered.map((p) => (
             <button key={p.id} onClick={() => addToCart(p)}
