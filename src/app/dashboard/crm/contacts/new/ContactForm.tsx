@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CONTACT_TYPES, CONTACT_TYPE_LABELS } from '@/lib/types/crm';
+import { useFormDraft } from '@/lib/useFormDraft';
 
 export default function ContactForm() {
   const [pending, setPending] = useState(false);
@@ -16,6 +17,7 @@ export default function ContactForm() {
     address: '',
     notes: '',
   });
+  const { clearDraft, draftRestored } = useFormDraft('contact-new', form, setForm);
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -33,7 +35,7 @@ export default function ContactForm() {
       });
       const data = await res.json();
       if (data.error) { setError(data.error); setPending(false); }
-      else { window.location.href = `/dashboard/crm/contacts/${data.id}`; }
+      else { clearDraft(); window.location.href = `/dashboard/crm/contacts/${data.id}`; }
     } catch {
       setError('Failed to save contact');
       setPending(false);
@@ -44,6 +46,12 @@ export default function ContactForm() {
     <div className="space-y-6">
       {error && (
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+      )}
+      {draftRestored && (
+        <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
+          <span>Restored your unsaved draft.</span>
+          <button type="button" onClick={() => { clearDraft(); window.location.reload(); }} className="font-medium underline-offset-2 hover:underline">Discard</button>
+        </div>
       )}
 
       <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-4">

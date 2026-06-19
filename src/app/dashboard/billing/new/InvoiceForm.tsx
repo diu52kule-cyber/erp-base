@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { GST_RATES } from '@/lib/types/billing';
 import { INDIAN_STATES } from '@/lib/types/accounting';
+import { useFormDraft } from '@/lib/useFormDraft';
 
 type LineItem = {
   description: string;
@@ -47,6 +48,13 @@ export default function InvoiceForm() {
 
   const [items, setItems] = useState<LineItem[]>([emptyItem()]);
 
+  // Auto-save the whole invoice (header + line items) so switching tabs doesn't lose work.
+  const { clearDraft, draftRestored } = useFormDraft(
+    'invoice-new',
+    { form, items },
+    (v: { form: typeof form; items: LineItem[] }) => { if (v.form) setForm(v.form); if (v.items) setItems(v.items); },
+  );
+
   const calculated = items.map((item) => {
     const amount = Math.round(item.quantity * item.unit_price * 100) / 100;
     const gst_amount = Math.round(amount * item.gst_rate) / 100;
@@ -83,7 +91,7 @@ export default function InvoiceForm() {
       });
       const data = await res.json();
       if (data.error) { setError(data.error); setPending(false); }
-      else { window.location.href = `/dashboard/billing/${data.id}`; }
+      else { clearDraft(); window.location.href = `/dashboard/billing/${data.id}`; }
     } catch (e: any) {
       setError(e?.message ?? 'Failed to save invoice');
       setPending(false);
@@ -94,6 +102,12 @@ export default function InvoiceForm() {
     <div className="space-y-6">
       {error && (
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+      )}
+      {draftRestored && (
+        <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
+          <span>Restored your unsaved invoice draft.</span>
+          <button type="button" onClick={() => { clearDraft(); window.location.reload(); }} className="font-medium underline-offset-2 hover:underline">Discard</button>
+        </div>
       )}
 
       {/* Customer details */}

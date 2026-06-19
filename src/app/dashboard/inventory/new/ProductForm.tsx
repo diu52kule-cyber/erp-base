@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { GST_RATES, UNITS } from '@/lib/types/inventory';
 import type { Unit } from '@/lib/types/inventory';
+import { useFormDraft } from '@/lib/useFormDraft';
 
 export default function ProductForm() {
   const [pending, setPending] = useState(false);
@@ -18,6 +19,7 @@ export default function ProductForm() {
     opening_stock: '',
     low_stock_threshold: '',
   });
+  const { clearDraft, draftRestored } = useFormDraft('product-new', form, setForm);
 
   async function handleSubmit() {
     if (!form.name.trim()) {
@@ -54,6 +56,7 @@ export default function ProductForm() {
         setError(data.error);
         setPending(false);
       } else {
+        clearDraft();
         window.location.href = '/dashboard/inventory';
       }
     } catch (e: any) {
@@ -67,6 +70,12 @@ export default function ProductForm() {
       {error && (
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+      {draftRestored && (
+        <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
+          <span>Restored your unsaved draft.</span>
+          <button type="button" onClick={() => { clearDraft(); window.location.reload(); }} className="font-medium underline-offset-2 hover:underline">Discard</button>
         </div>
       )}
 
