@@ -35,9 +35,9 @@ async function buildSnapshot(orgId: string, has: (k: string) => boolean) {
     lines.push(`CHECK-INS today: ${(c ?? []).length}, ${withBlockers.length} reporting blockers.`);
   }
   if (has('inventory')) {
-    const { data: products } = await supabase.from('products').select('name, quantity, low_stock_threshold').eq('org_id', orgId).limit(500);
-    const low = (products ?? []).filter((p: { quantity?: number; low_stock_threshold?: number }) =>
-      p.quantity != null && p.low_stock_threshold != null && p.quantity <= p.low_stock_threshold);
+    const { data: products } = await supabase.from('products').select('name, stock_qty, low_stock_threshold').eq('org_id', orgId).limit(500);
+    const low = (products ?? []).filter((p: { stock_qty?: number; low_stock_threshold?: number }) =>
+      p.stock_qty != null && p.low_stock_threshold != null && p.stock_qty <= p.low_stock_threshold);
     lines.push(`INVENTORY: ${low.length} item(s) at/below low-stock threshold.`);
     if (low.length) lines.push(`Low stock: ${low.slice(0, 15).map((p: { name: string }) => p.name).join('; ')}.`);
   }
