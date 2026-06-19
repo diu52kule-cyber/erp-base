@@ -11,10 +11,22 @@ export default async function POSPage() {
 
   const supabase = await createClient();
 
-  const [{ data: session }, { data: products }] = await Promise.all([
-    supabase.from('pos_sessions').select('*').eq('org_id', ctx.org.id).eq('status', 'open').maybeSingle(),
-    supabase.from('products').select('id,name,sku,unit_price:selling_price,gst_rate,stock_qty').eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
-  ]);
+  const { data: session } = await supabase
+    .from('pos_sessions').select('*').eq('org_id', ctx.org.id).eq('status', 'open').maybeSingle();
+
+  // Include barcode when the column exists (migration 0025); fall back gracefully if not.
+  const withBarcode = await supabase
+    .from('products')
+    .select('id,name,sku,barcode,unit_price:selling_price,gst_rate,stock_qty')
+    .eq('org_id', ctx.org.id).eq('is_active', true).order('name');
+  let products: any[] = withBarcode.data ?? [];
+  if (withBarcode.error) {
+    const noBarcode = await supabase
+      .from('products')
+      .select('id,name,sku,unit_price:selling_price,gst_rate,stock_qty')
+      .eq('org_id', ctx.org.id).eq('is_active', true).order('name');
+    products = noBarcode.data ?? [];
+  }
 
   return (
     <div className="space-y-4">

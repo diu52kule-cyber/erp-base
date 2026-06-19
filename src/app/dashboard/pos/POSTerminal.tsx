@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 
-type Product = { id: string; name: string; sku: string; unit_price: number; gst_rate: number; stock_qty: number; category?: string };
+type Product = { id: string; name: string; sku: string; barcode?: string | null; unit_price: number; gst_rate: number; stock_qty: number; category?: string };
 type CartItem = Product & { qty: number };
 
 function fmt(n: number) { return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2 }); }
@@ -18,12 +18,24 @@ export default function POSTerminal({ sessionId, products }: { sessionId: string
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string|null>(null);
 
+  const [autoAdd, setAutoAdd] = useState(true);
+
   const searchRef = useRef<HTMLInputElement>(null);
   const tenderRef = useRef<HTMLInputElement>(null);
+  // Scanner timing detection refs
+  const lastKeyRef = useRef(0);
+  const fastRef = useRef(0);
+  const scanRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filtered = useMemo(() =>
-    products.filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku ?? '').toLowerCase().includes(search.toLowerCase())),
+    products.filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku ?? '').toLowerCase().includes(search.toLowerCase()) || (p.barcode ?? '').toLowerCase().includes(search.toLowerCase())),
     [products, search]);
+
+  useEffect(() => { try { setAutoAdd(localStorage.getItem('pos-autoadd') !== '0'); } catch {} }, []);
+  function toggleAuto() {
+    setAutoAdd((a) => { const n = !a; try { localStorage.setItem('pos-autoadd', n ? '1' : '0'); } catch {} return n; });
+  }
 
   // Keep the search box focused on the POS screen (also enables barcode scanners)
   useEffect(() => { if (screen === 'pos') searchRef.current?.focus(); }, [screen]);
@@ -36,20 +48,52 @@ export default function POSTerminal({ sessionId, products }: { sessionId: string
     return () => window.removeEventListener('keydown', h);
   }, [screen]);
 
+  // Exact match on barcode → SKU (used for scans; no fuzzy guessing)
+  function exactMatch(q: string): Product | null {
+    const s = q.trim().toLowerCase();
+    if (!s) return null;
+    return products.find((p) => (p.barcode ?? '').toLowerCase() === s)
+        ?? products.find((p) => (p.sku ?? '').toLowerCase() === s)
+        ?? null;
+  }
+
+  // Handles scanners that DON'T send Enter: rapid keystrokes → auto-commit the scan.
+  function onSearchChange(v: string) {
+    setSearch(v);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      if (autoAdd && scanRef.current && v.trim()) {
+        const m = exactMatch(v);
+        if (m) { addToCart(m); setSearch(''); }
+      }
+      scanRef.current = false;
+      fastRef.current = 0;
+    }, 90);
+  }
+
   function onSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
+    // measure typing speed to distinguish a scanner burst from human typing
+    const now = Date.now();
+    const gap = now - lastKeyRef.current;
+    lastKeyRef.current = now;
+    if (e.key.length === 1) {
+      if (gap < 35) { fastRef.current += 1; if (fastRef.current >= 2) scanRef.current = true; }
+      else fastRef.current = 0;
+    }
+
+    if (e.key === 'Enter') {           // scanners that DO send Enter (and manual entry)
       e.preventDefault();
-      const q = search.trim().toLowerCase();
+      if (timerRef.current) clearTimeout(timerRef.current);
+      const q = search.trim();
       if (q) {
-        // Exact SKU match first (barcode scan), else top filtered result
-        const exact = products.find((p) => (p.sku ?? '').toLowerCase() === q);
-        const pick = exact ?? filtered[0];
+        const pick = exactMatch(q) ?? filtered[0];
         if (pick) { addToCart(pick); setSearch(''); }
       } else if (cart.length) {
         setScreen('tender');
       }
+      scanRef.current = false; fastRef.current = 0;
     } else if (e.key === 'Escape') {
-      setSearch('');
+      setSearch(''); scanRef.current = false; fastRef.current = 0;
     }
   }
 
@@ -177,10 +221,14 @@ export default function POSTerminal({ sessionId, products }: { sessionId: string
     <div className="flex h-[calc(100vh-120px)] gap-4">
       {/* Product grid */}
       <div className="flex-1 flex flex-col gap-3">
-        <div>
-          <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={onSearchKey}
+        <div className="flex items-center gap-3">
+          <input ref={searchRef} value={search} onChange={(e) => onSearchChange(e.target.value)} onKeyDown={onSearchKey}
             placeholder="Search or scan barcode…  (Enter adds · Esc clears)" autoFocus
-            className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+          <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-neutral-500" title="Auto-add when a scanner doesn't send Enter">
+            <input type="checkbox" checked={autoAdd} onChange={toggleAuto} className="h-3.5 w-3.5" />
+            Auto-add scans
+          </label>
         </div>
         <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 content-start">
           {filtered.map((p) => (

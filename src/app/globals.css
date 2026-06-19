@@ -30,6 +30,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 /* Inputs feel a touch softer */
 input, select, textarea { transition: border-color .15s ease, box-shadow .15s ease; }
 
+/* ── Label printing (thermal) — only the label area prints ── */
+@media print {
+  body * { visibility: hidden !important; }
+  #label-print-area, #label-print-area * { visibility: visible !important; }
+  #label-print-area { position: absolute; left: 0; top: 0; display: flex; flex-wrap: wrap; gap: 2mm; }
+  .label-card { break-inside: avoid; page-break-inside: avoid; border: none !important; box-shadow: none !important; }
+  .no-print { display: none !important; }
+}
+
 /* ───────────────────────────────────────────────────────────────
    Dark mode (class strategy). We retrofit the app's light utility
    classes to dark equivalents centrally so every page stays in sync.

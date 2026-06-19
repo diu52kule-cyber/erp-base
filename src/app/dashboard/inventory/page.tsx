@@ -4,6 +4,7 @@ import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import type { Product } from '@/lib/types/inventory';
 import StockAdjuster from './StockAdjuster';
+import LabelButton from './LabelButton';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -66,6 +67,7 @@ export default async function InventoryPage() {
                 <th className="px-4 py-3 text-right font-medium">Price</th>
                 <th className="px-4 py-3 text-right font-medium">GST</th>
                 <th className="px-4 py-3 text-right font-medium">Stock</th>
+                <th className="px-4 py-3 text-center font-medium">Label</th>
                 <th className="px-4 py-3 text-center font-medium">Adjust</th>
               </tr>
             </thead>
@@ -102,6 +104,9 @@ export default async function InventoryPage() {
                       {isLow && (
                         <span className="ml-1 text-xs text-amber-500">low</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <LabelButton name={p.name} price={p.selling_price} code={p.barcode || p.sku || ''} />
                     </td>
                     <td className="px-4 py-3">
                       <StockAdjuster
