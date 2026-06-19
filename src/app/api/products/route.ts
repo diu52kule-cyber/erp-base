@@ -40,6 +40,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Best-effort barcode save (works once migration 0025 has added the column).
+  if (input.barcode?.trim()) {
+    await supabase.from('products').update({ barcode: input.barcode.trim() }).eq('id', product.id);
+  }
+
   if (input.opening_stock && input.opening_stock > 0) {
     await supabase.from('stock_movements').insert({
       org_id: ctx.org.id,

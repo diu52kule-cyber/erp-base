@@ -12,6 +12,7 @@ export type Product = {
   org_id: string;
   name: string;
   sku: string | null;
+  barcode?: string | null;
   description: string | null;
   unit: Unit;
   selling_price: number;
@@ -37,6 +38,7 @@ export type StockMovement = {
 export type CreateProductInput = {
   name: string;
   sku?: string;
+  barcode?: string;
   description?: string;
   unit: Unit;
   selling_price: number;

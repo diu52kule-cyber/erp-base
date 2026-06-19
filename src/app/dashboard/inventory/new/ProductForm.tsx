@@ -12,6 +12,7 @@ export default function ProductForm() {
   const [form, setForm] = useState({
     name: '',
     sku: '',
+    barcode: '',
     description: '',
     unit: 'pcs' as Unit,
     selling_price: '',
@@ -41,6 +42,7 @@ export default function ProductForm() {
         body: JSON.stringify({
           name: form.name,
           sku: form.sku || undefined,
+          barcode: form.barcode || undefined,
           description: form.description || undefined,
           unit: form.unit,
           selling_price: price,
@@ -107,6 +109,27 @@ export default function ProductForm() {
               placeholder="e.g. ESP-001"
               className="w-full rounded-lg border border-neutral-200 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
             />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm text-neutral-600">Barcode / QR value</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={form.barcode}
+                onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+                placeholder="Scan an existing barcode, type one, or generate"
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              />
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, barcode: String(Math.floor(100000000000 + Math.random() * 899999999999)) }))}
+                className="shrink-0 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+              >
+                Generate
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-neutral-400">Used to scan this product at POS and to print a label. Leave blank to scan by SKU.</p>
           </div>
 
           <div>
