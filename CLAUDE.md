@@ -141,6 +141,39 @@ modules; the platform enables only what each customer's plan includes.
   revoke/list UI, `/api/v1/{invoices,contacts,products}` REST endpoints with Bearer auth,
   webhook subscriptions (url + events + signing secret). Settings sub-nav (Team / Currencies /
   API Keys / Webhooks). Migration: `0018_api_keys.sql` — `api_keys`, `webhooks`.
+- [x] **Phase 20** — Admin panel & onboarding: separate operator admin auth (HMAC cookie
+  `erp_admin_session`, `ADMIN_USERNAME/PASSWORD/SECRET`, rate-limited + timing-safe), `/admin`
+  clients list + per-client plan/module management, 3-step onboarding wizard with 7-day trial.
+  Migrations: `0019_admin_plans.sql` (`org_plans`), `0020_onboarding.sql`.
+- [x] **Phase 21** — Business presets, trial paywall & subscription billing: per-business-type
+  module presets seeded at onboarding; entitlements read from DB; `getOrgContext` returns
+  `plan`/`access` (active/trial/locked) and is wrapped in React `cache()`; hard-lock paywall at
+  `/locked` with Razorpay "pay & reactivate" + WhatsApp/QR contact; subscription webhook
+  reactivates the org; Admin → Settings platform billing contact. Tailored dashboard home.
+  Migrations: `0021_platform_billing.sql` (`platform_settings`), `0022_modules_sync.sql`.
+- [x] **Phase 22** — Startup OS (Workspace modules): Docs & KB (templates + version history),
+  Tasks & Sprints (kanban), Goals/OKRs, Product Pipeline (`features`), Meetings (+ action items →
+  tasks), Issues, Releases, Decision Log, Daily Check-ins, AI Assistant (`/api/assistant`,
+  RLS-scoped snapshot → Claude, needs `ANTHROPIC_API_KEY`). Nav grouped Business/Workspace.
+  Migration: `0023_startup_os.sql`.
+- [x] **Phase 23** — RBAC, settings & preferences: 14 roles (`owner/admin/manager/accountant/
+  hr/sales/marketing/developer/designer/support/operations/cashier/staff/viewer`); `ROLE_MODULES`
+  map intersected with org entitlements in `getOrgContext` (UI-level gating); role-gated Settings
+  tabs + owner/admin enforcement on API-key/webhook routes; app Preferences (font/size/theme via
+  localStorage). Migration: `0024_more_roles.sql` (widen role CHECK constraints).
+
+> See `ROADMAP.md` for what's next (offline POS, QR ordering, WhatsApp, analytics, AI metering,
+> loyalty CRM, hardware) and the security hardening backlog (RLS-by-role, API-level guards).
+
+### Known gaps / hardening backlog (do before scaling users)
+- **Role/trial enforcement is UI-level only.** Module gating + trial-lock are enforced in
+  `getOrgContext`/page guards, NOT in RLS or most write APIs. Add **RLS policies keyed on role**
+  and `access !== 'locked'` + role checks to module write routes.
+- **Invites are bearer links** — acceptance doesn't verify the logged-in email matches the invited
+  email. Add an email match check if invites should be locked to the recipient.
+- **AI Assistant** has no usage metering/caps — gate behind a paid tier + per-org limits before
+  enabling `ANTHROPIC_API_KEY` (one key = all clients spend your tokens).
+- **Preferences are per-device** (localStorage), not synced to the account.
 
 ---
 

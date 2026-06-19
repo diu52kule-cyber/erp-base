@@ -98,22 +98,36 @@ ONBOARDING (auth, no org yet)
 PAYWALL (auth, org locked)
   /locked                trial expired → Razorpay pay + WhatsApp/QR contact ✅
 
-DASHBOARD (auth + org + access≠locked)        ← gated by getOrgContext()
+DASHBOARD (auth + org + access≠locked + role)   ← gated by getOrgContext() (modules ∩ role)
+  BUSINESS group
   /dashboard                         tailored home (KPIs, quick actions) ✅
   /dashboard/billing      + /[id] /new        invoices ✅
   /dashboard/payments     + /new              payments ✅
   /dashboard/inventory    + /new              products, stock ✅
-  /dashboard/pos          + /sessions         POS  ✅ (⚠️ lives in dashboard chrome → move to /station 🔜)
+  /dashboard/pos          + /sessions         POS  ✅ (⚠️ in dashboard chrome → move to /station 🔜)
   /dashboard/purchase     + /[id] /new        purchase orders ✅
   /dashboard/crm          contacts / deals    ✅
   /dashboard/hr           attendance/payroll  ✅
   /dashboard/subscriptions plans/customers    ✅
-  /dashboard/projects     + /[id] /new        projects, tasks, time ✅
   /dashboard/expenses                         expense claims ✅
   /dashboard/accounting   gstr1/gstr3b/settings ✅
   /dashboard/reports                          cross-module ✅
   /dashboard/import                           CSV wizard ✅
-  /dashboard/settings     team/currencies/api/webhooks ✅
+
+  WORKSPACE group (Startup OS) ✅
+  /dashboard/projects     + /[id] /new        projects, tasks, time ✅
+  /dashboard/docs         + /[id]             knowledge base, templates, versions ✅
+  /dashboard/tasks                            tasks & sprints (kanban) ✅
+  /dashboard/goals                            OKRs ✅
+  /dashboard/features                         product pipeline ✅
+  /dashboard/meetings     + /[id]             notes + action items → tasks ✅
+  /dashboard/issues                           bug/issue tracker ✅
+  /dashboard/releases                         release log ✅
+  /dashboard/decisions                        decision log ✅
+  /dashboard/checkins                         daily standups / accountability ✅
+  /dashboard/assistant                        AI assistant (needs ANTHROPIC_API_KEY) ✅
+
+  /dashboard/settings     preferences (all) · team/currencies/api/webhooks (role-gated) ✅
 
 STATION SCREENS 🔜 (auth + role + entitlement, full-screen, no sidebar)
   /station/pos            cashier   (move existing POS here)
@@ -216,11 +230,14 @@ POS                 pos_sessions · pos_orders · pos_order_lines   (+ kitchen_s
 CRM                 contacts · deals
 HR / PAYROLL        employees · attendance · payroll_runs · payroll_entries · statutory_settings
 SUBSCRIPTIONS       subscription_plans · customer_subscriptions
-PROJECTS            projects · tasks · time_entries
+PROJECTS            projects · tasks (shared w/ Tasks module) · time_entries
 EXPENSES            expense_categories · expense_claims
 MULTI-CURRENCY      currencies · org_currency_settings
+WORKSPACE (OS)      docs · doc_versions · sprints · features · goals · key_results · meetings ·
+                    action_items · issues · releases · decisions · checkins
+                    (tasks extended: sprint_id, feature_id, priority, labels, backlog/blocked)
 PLATFORM/INTEG.     api_keys · webhooks · notifications · audit_log · attachments
-ACCESS (planned)    member_permissions 🔜 (per-user overrides)  · custom_roles 🔜
+ACCESS (planned)    member_permissions 🔜 (per-user overrides)  · custom_roles 🔜  · user_preferences 🔜 (synced)
 
 Every tenant table: org_id uuid → organizations(id), RLS ON, policies via is_org_member(org_id) ⚙️
 ```
