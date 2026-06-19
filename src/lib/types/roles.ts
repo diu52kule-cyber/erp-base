@@ -19,11 +19,11 @@ export const ROLE_COLORS: Record<OrgRole, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<OrgRole, string> = {
-  owner:      'Full access. Can manage team, billing, and all settings.',
-  manager:    'Can view and edit all modules. Cannot delete or manage billing.',
-  accountant: 'Access to billing, GST, and reports only.',
-  hr:         'Access to HR module (employees, attendance, payroll) only.',
-  staff:      'Read-only access to assigned modules.',
+  owner:      'Full access to every module, the team, billing, and all settings.',
+  manager:    'Full access to all modules; runs day-to-day operations.',
+  accountant: 'Finance & books: billing, payments, GST/accounting, purchases, expenses, reports + shared docs & tasks.',
+  hr:         'People ops: employees, attendance, payroll, expenses, onboarding docs, meetings & check-ins.',
+  staff:      'Execution: POS, inventory, projects, tasks, issues + team docs, meetings & check-ins.',
 };
 
 // Role → which module keys that role may access.
@@ -33,9 +33,21 @@ export const ROLE_DESCRIPTIONS: Record<OrgRole, string> = {
 export const ROLE_MODULES: Record<OrgRole, string[] | 'all'> = {
   owner:   'all',
   manager: 'all',
-  accountant: ['billing', 'payments', 'accounting', 'reports', 'expenses', 'purchase', 'subscriptions'],
-  hr:         ['hr', 'reports', 'checkins', 'expenses'],
-  staff:      ['pos', 'tasks', 'checkins', 'docs', 'issues', 'projects'],
+  // Finance & books + shared workspace basics
+  accountant: [
+    'billing', 'payments', 'accounting', 'reports', 'expenses', 'purchase', 'subscriptions', 'import',
+    'docs', 'tasks', 'checkins', 'decisions', 'assistant',
+  ],
+  // People ops + onboarding/meetings/accountability
+  hr: [
+    'hr', 'reports', 'expenses', 'import',
+    'docs', 'tasks', 'goals', 'meetings', 'checkins', 'decisions', 'assistant',
+  ],
+  // Execution: operational + team workspace (no financials, CRM, HR, or reports)
+  staff: [
+    'pos', 'inventory',
+    'projects', 'tasks', 'issues', 'features', 'docs', 'meetings', 'checkins', 'assistant',
+  ],
 };
 
 // Returns the set of module keys a role may access, or null for unrestricted (all).

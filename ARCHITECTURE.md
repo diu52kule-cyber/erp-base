@@ -61,11 +61,22 @@ Access = intersection of three independent questions. This is the spine of the a
 - `enabledModules` ← `entitlements` table (seeded by business-type preset on signup).
 - `access` ← `org_plans.status` + `next_billing_date`.  `locked` → redirect to `/locked`.
 
-### Plane 2 — Role  🔜 (defined, NOT yet enforced for visibility)
+### Plane 2 — Role  ✅ (enforced for visibility) · 🔜 (RLS layer pending)
 `memberships.role` ∈ `owner · manager · accountant · hr · staff` ([src/lib/types/roles.ts](src/lib/types/roles.ts)).
-- ✅ Today: gates team-management actions (invite / change role / remove) + a few feature actions.
-- 🔜 Planned: a `ROLE_MODULES` map intersected with `enabledModules` so each employee
-  sees only their modules — enforced in sidebar + page guards + **RLS**.
+- ✅ `ROLE_MODULES` map is intersected with org `enabledModules` in `getOrgContext()`,
+  so each member only sees their role's modules in the sidebar, dashboard, and page guards.
+- ✅ Effective access = **org's enabled modules ∩ role's allowed modules** (owner/manager = all).
+- ✅ Gates team-management actions (invite / change role / remove).
+- 🔜 Still UI-level only — needs **RLS policies keyed on role** for true write protection,
+  and per-member overrides for custom cases.
+
+Role → module access (edit `ROLE_MODULES`):
+| Role | Modules |
+|---|---|
+| owner / manager | everything |
+| accountant | billing, payments, accounting, reports, expenses, purchase, subscriptions, import + docs, tasks, check-ins, decisions, AI |
+| hr | hr, reports, expenses, import + docs, tasks, goals, meetings, check-ins, decisions, AI |
+| staff | pos, inventory + projects, tasks, issues, features, docs, meetings, check-ins, AI |
 
 ### Plane 3 — Screen  (dashboard ✅ · station 🔜)
 - ✅ **Dashboard pages** — back-office, full chrome (sidebar), one per module.

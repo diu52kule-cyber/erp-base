@@ -18,13 +18,13 @@ export const MODULES: ModuleDef[] = [
   { key: "crm",           name: "CRM",                   href: "/dashboard/crm",           icon: "🤝", category: "business" },
   { key: "hr",            name: "HR",                    href: "/dashboard/hr",            icon: "👥", category: "business" },
   { key: "subscriptions", name: "Subscriptions",         href: "/dashboard/subscriptions", icon: "🔄", category: "business" },
-  { key: "projects",      name: "Projects",              href: "/dashboard/projects",      icon: "📊", category: "business" },
   { key: "expenses",      name: "Expenses",              href: "/dashboard/expenses",      icon: "🧮", category: "business" },
   { key: "accounting",    name: "GST & Accounting",      href: "/dashboard/accounting",    icon: "📈", category: "business" },
   { key: "reports",       name: "Reports",               href: "/dashboard/reports",       icon: "📉", category: "business" },
   { key: "import",        name: "Data Import",           href: "/dashboard/import",        icon: "⬆️", category: "business" },
 
   // ── Workspace / Startup OS ──
+  { key: "projects",  name: "Projects",         href: "/dashboard/projects",  icon: "📊", category: "workspace" },
   { key: "docs",      name: "Docs & Knowledge", href: "/dashboard/docs",      icon: "📚", category: "workspace" },
   { key: "tasks",     name: "Tasks & Sprints",  href: "/dashboard/tasks",     icon: "✅", category: "workspace" },
   { key: "goals",     name: "Goals & OKRs",     href: "/dashboard/goals",     icon: "🎯", category: "workspace" },
