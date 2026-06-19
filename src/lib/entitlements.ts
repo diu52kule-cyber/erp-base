@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ALL_MODULE_KEYS } from "@/lib/modules";
+import { allowedModulesForRole } from "@/lib/types/roles";
 
 export type PlanInfo = {
   plan_name: string;
@@ -72,9 +73,15 @@ export const getOrgContext = cache(async (): Promise<OrgContext | null> => {
   ]);
 
   // If no entitlement rows exist for this org, fall back to all modules (back-compat).
-  const enabledModules = entRows && entRows.length > 0
+  const orgModules = entRows && entRows.length > 0
     ? new Set(entRows.map((r) => r.module_key as string))
     : new Set(ALL_MODULE_KEYS);
+
+  // Restrict to what this member's ROLE may access (owner/manager = all).
+  const roleAllowed = allowedModulesForRole(membership.role as string);
+  const enabledModules = roleAllowed
+    ? new Set([...orgModules].filter((k) => roleAllowed.has(k)))
+    : orgModules;
 
   const plan: PlanInfo = planRow
     ? {

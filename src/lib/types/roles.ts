@@ -26,6 +26,25 @@ export const ROLE_DESCRIPTIONS: Record<OrgRole, string> = {
   staff:      'Read-only access to assigned modules.',
 };
 
+// Role → which module keys that role may access.
+// 'all' = every module the org has (owner/manager). Otherwise the role only
+// sees the intersection of (org's enabled modules) ∩ (this list).
+// Edit these lists to change what each role can see across the whole app.
+export const ROLE_MODULES: Record<OrgRole, string[] | 'all'> = {
+  owner:   'all',
+  manager: 'all',
+  accountant: ['billing', 'payments', 'accounting', 'reports', 'expenses', 'purchase', 'subscriptions'],
+  hr:         ['hr', 'reports', 'checkins', 'expenses'],
+  staff:      ['pos', 'tasks', 'checkins', 'docs', 'issues', 'projects'],
+};
+
+// Returns the set of module keys a role may access, or null for unrestricted (all).
+export function allowedModulesForRole(role: OrgRole | string): Set<string> | null {
+  const allowed = ROLE_MODULES[role as OrgRole];
+  if (!allowed || allowed === 'all') return null;
+  return new Set(allowed);
+}
+
 // Which roles can invite new members
 export function canInvite(role: OrgRole): boolean {
   return role === 'owner' || role === 'manager';
