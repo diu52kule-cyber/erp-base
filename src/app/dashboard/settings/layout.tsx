@@ -1,19 +1,28 @@
 import Link from 'next/link';
+import { getOrgContext } from '@/lib/entitlements';
+import type { OrgRole } from '@/lib/types/roles';
 
-const SETTINGS_NAV = [
-  { href: '/dashboard/settings/team', label: 'Team Members' },
-  { href: '/dashboard/settings/currencies', label: 'Currencies' },
-  { href: '/dashboard/settings/api', label: 'API Keys' },
-  { href: '/dashboard/settings/webhooks', label: 'Webhooks' },
+type NavItem = { href: string; label: string; roles: OrgRole[] | 'all' };
+
+const SETTINGS_NAV: NavItem[] = [
+  { href: '/dashboard/settings/preferences', label: 'Preferences', roles: 'all' },
+  { href: '/dashboard/settings/team',        label: 'Team Members', roles: ['owner', 'admin', 'manager'] },
+  { href: '/dashboard/settings/currencies',  label: 'Currencies',   roles: ['owner', 'admin', 'manager', 'accountant'] },
+  { href: '/dashboard/settings/api',         label: 'API Keys',     roles: ['owner', 'admin'] },
+  { href: '/dashboard/settings/webhooks',    label: 'Webhooks',     roles: ['owner', 'admin'] },
 ];
 
-export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
+  const ctx = await getOrgContext();
+  const role = (ctx?.org?.role ?? 'staff') as OrgRole;
+  const visible = SETTINGS_NAV.filter((i) => i.roles === 'all' || i.roles.includes(role));
+
   return (
     <div className="flex gap-8">
       <nav className="w-48 shrink-0">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">Settings</p>
         <ul className="space-y-1">
-          {SETTINGS_NAV.map((item) => (
+          {visible.map((item) => (
             <li key={item.href}>
               <Link href={item.href} className="block rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900">
                 {item.label}

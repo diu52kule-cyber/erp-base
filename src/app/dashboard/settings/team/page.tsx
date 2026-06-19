@@ -1,11 +1,14 @@
 import { redirect } from 'next/navigation';
 import { getOrgContext } from '@/lib/entitlements';
 import TeamClient from './TeamClient';
+import { canInvite } from '@/lib/types/roles';
 import type { OrgRole } from '@/lib/types/roles';
 
 export default async function TeamPage() {
   const ctx = await getOrgContext();
   if (!ctx?.org) redirect('/login');
+  // Only the team-management tier (owner/admin/manager) may view this page.
+  if (!canInvite(ctx.org.role as OrgRole)) redirect('/dashboard/settings/preferences');
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://erp-base-eight.vercel.app';
 
