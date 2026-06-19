@@ -37,6 +37,9 @@ modules; the platform enables only what each customer's plan includes.
 - DB migrations: SQL files in `supabase/migrations/`, run in the Supabase SQL Editor.
 
 ## Architecture (key files)
+- `ARCHITECTURE.md` — **visual structure of the whole app** (access planes, route map,
+  auth systems, billing lifecycle, screen strategy, data model). Read it first; all
+  structural changes should fit this map.
 - `supabase/migrations/0001_init.sql` — tenants (`organizations`), `memberships`,
   the sellable-feature catalog (`modules`), per-tenant `entitlements`, RLS policies,
   and the `create_organization` RPC.
