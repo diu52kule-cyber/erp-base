@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOrgContext } from "@/lib/entitlements";
-import { MODULES } from "@/lib/modules";
+import { MODULES, CATEGORY_LABELS, type ModuleCategory } from "@/lib/modules";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ROLE_LABELS, ROLE_COLORS } from "@/lib/types/roles";
 import type { OrgRole } from "@/lib/types/roles";
@@ -15,6 +15,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (ctx.access === "locked") redirect("/locked");
 
   const visible = MODULES.filter((m) => ctx.enabledModules.has(m.key));
+  const order: ModuleCategory[] = ["business", "workspace"];
+  const groups = order
+    .map((cat) => ({ cat, items: visible.filter((m) => m.category === cat) }))
+    .filter((g) => g.items.length > 0);
   const showTrialBanner = ctx.access === "trial" && ctx.trialDaysLeft !== null;
 
   return (
@@ -33,13 +37,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         {/* Nav */}
         <nav className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto">
-          <Link href="/dashboard" className="rounded-md px-3 py-2 text-sm hover:bg-neutral-100">
+          <Link href="/dashboard" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-neutral-100">
             Overview
           </Link>
-          {visible.map((m) => (
-            <Link key={m.key} href={m.href} className="rounded-md px-3 py-2 text-sm hover:bg-neutral-100">
-              {m.name}
-            </Link>
+          {groups.map((g) => (
+            <div key={g.cat} className="mt-3">
+              <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                {CATEGORY_LABELS[g.cat]}
+              </div>
+              {g.items.map((m) => (
+                <Link key={m.key} href={m.href} className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm hover:bg-neutral-100">
+                  <span className="text-base leading-none">{m.icon}</span>
+                  <span>{m.name}</span>
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
 

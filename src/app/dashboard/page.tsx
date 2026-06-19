@@ -50,7 +50,9 @@ export default async function DashboardHome() {
     // only show actions whose target module is enabled
     MODULES.some((m) => a.href.startsWith(m.href) && has(m.key)) || a.href === "/dashboard/reports"
   );
-  const visibleModules = MODULES.filter((m) => has(m.key));
+  const moduleGroups = (["business", "workspace"] as const)
+    .map((cat) => ({ cat, items: MODULES.filter((m) => m.category === cat && has(m.key)) }))
+    .filter((g) => g.items.length > 0);
   const firstName = (ctx.user.email ?? "there").split("@")[0];
 
   return (
@@ -96,19 +98,23 @@ export default async function DashboardHome() {
         </section>
       )}
 
-      {/* Modules */}
-      <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-500">Your modules</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-          {visibleModules.map((m) => (
-            <Link key={m.key} href={m.href}
-              className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4 hover:border-neutral-300 hover:shadow-sm transition-all">
-              <span className="text-2xl">{m.icon}</span>
-              <span className="font-medium text-sm">{m.name}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Modules grouped by category */}
+      {moduleGroups.map((g) => (
+        <section key={g.cat}>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-500">
+            {g.cat === "workspace" ? "Workspace · Startup OS" : "Business"}
+          </h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+            {g.items.map((m) => (
+              <Link key={m.key} href={m.href}
+                className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4 hover:border-neutral-300 hover:shadow-sm transition-all">
+                <span className="text-2xl">{m.icon}</span>
+                <span className="font-medium text-sm">{m.name}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

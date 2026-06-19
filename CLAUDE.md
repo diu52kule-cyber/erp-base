@@ -40,6 +40,9 @@ modules; the platform enables only what each customer's plan includes.
 - `ARCHITECTURE.md` — **visual structure of the whole app** (access planes, route map,
   auth systems, billing lifecycle, screen strategy, data model). Read it first; all
   structural changes should fit this map.
+- `ROADMAP.md` — **plan of action**: prioritized future initiatives (offline POS, QR
+  ordering, WhatsApp ops, analytics, AI layer, hardware, loyalty CRM, team/startup tools,
+  pricing tiers) with dependencies and build waves.
 - `supabase/migrations/0001_init.sql` — tenants (`organizations`), `memberships`,
   the sellable-feature catalog (`modules`), per-tenant `entitlements`, RLS policies,
   and the `create_organization` RPC.

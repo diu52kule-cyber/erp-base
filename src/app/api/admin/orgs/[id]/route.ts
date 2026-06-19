@@ -69,5 +69,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     await admin.from('entitlements').upsert(rows, { onConflict: 'org_id,module_key' });
   }
 
+  // Toggle a specific set of modules (a bundle, e.g. all workspace modules)
+  if (Array.isArray(body.module_keys)) {
+    const rows = body.module_keys.map((key: string) => ({ org_id: id, module_key: key, enabled: !!body.enabled }));
+    if (rows.length) await admin.from('entitlements').upsert(rows, { onConflict: 'org_id,module_key' });
+  }
+
   return NextResponse.json({ success: true });
 }

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-type Module = { key: string; name: string; enabled: boolean };
+type Module = { key: string; name: string; enabled: boolean; category?: string };
 type Plan = { plan_name: string; status: string; amount: number; billing_period: string; next_billing_date?: string | null; notes?: string | null };
 type Member = { user_id: string; role: string; email?: string };
 type Stats = { invoice_count: number; revenue: number; employee_count: number };
@@ -42,6 +42,12 @@ export default function ClientDetail({ orgId, orgName, initialPlan, initialModul
   async function toggleAll(enabled: boolean) {
     setModules((m) => m.map((mod) => ({ ...mod, enabled })));
     await patch({ all_modules: enabled });
+  }
+
+  async function toggleBundle(category: string, enabled: boolean) {
+    const keys = modules.filter((m) => (m.category ?? 'business') === category).map((m) => m.key);
+    setModules((m) => m.map((mod) => keys.includes(mod.key) ? { ...mod, enabled } : mod));
+    await patch({ module_keys: keys, enabled });
   }
 
   function setPlanField(k: keyof Plan, v: string | number) {
@@ -126,26 +132,40 @@ export default function ClientDetail({ orgId, orgName, initialPlan, initialModul
             <h2 className="font-semibold text-lg">Module Access</h2>
             <p className="text-xs text-neutral-400 mt-0.5">{enabledCount}/{modules.length} modules enabled</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => toggleBundle('business', true)} className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs hover:bg-neutral-50">+ Business</button>
+            <button onClick={() => toggleBundle('workspace', true)} className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs hover:bg-neutral-50">+ Startup OS</button>
             <button onClick={() => toggleAll(false)} className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs hover:bg-neutral-50">Disable All</button>
             <button onClick={() => toggleAll(true)} className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs text-white">Enable All</button>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {modules.map((mod) => (
-            <label key={mod.key} className={`flex items-center justify-between rounded-lg border px-4 py-3 cursor-pointer transition-all ${mod.enabled ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-200 hover:border-neutral-300'}`}>
-              <div className="flex items-center gap-3">
-                <div className={`h-2 w-2 rounded-full ${mod.enabled ? 'bg-green-500' : 'bg-neutral-300'}`} />
-                <span className="text-sm font-medium">{mod.name}</span>
-                <code className="text-xs text-neutral-400">{mod.key}</code>
+        {(['business', 'workspace'] as const).map((cat) => {
+          const mods = modules.filter((m) => (m.category ?? 'business') === cat);
+          if (mods.length === 0) return null;
+          return (
+            <div key={cat} className="mb-4">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">{cat === 'workspace' ? 'Startup OS / Workspace' : 'Business'}</span>
+                <button onClick={() => toggleBundle(cat, false)} className="text-[11px] text-neutral-400 hover:text-red-600">turn off all</button>
               </div>
-              <button onClick={() => toggleModule(mod.key, !mod.enabled)}
-                className={`relative h-5 w-9 rounded-full transition-colors ${mod.enabled ? 'bg-neutral-900' : 'bg-neutral-200'}`}>
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${mod.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-              </button>
-            </label>
-          ))}
-        </div>
+              <div className="grid grid-cols-2 gap-2">
+                {mods.map((mod) => (
+                  <label key={mod.key} className={`flex items-center justify-between rounded-lg border px-4 py-3 cursor-pointer transition-all ${mod.enabled ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-200 hover:border-neutral-300'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`h-2 w-2 rounded-full ${mod.enabled ? 'bg-green-500' : 'bg-neutral-300'}`} />
+                      <span className="text-sm font-medium">{mod.name}</span>
+                      <code className="text-xs text-neutral-400">{mod.key}</code>
+                    </div>
+                    <button onClick={() => toggleModule(mod.key, !mod.enabled)}
+                      className={`relative h-5 w-9 rounded-full transition-colors ${mod.enabled ? 'bg-neutral-900' : 'bg-neutral-200'}`}>
+                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${mod.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                    </button>
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
         <p className="mt-3 text-xs text-neutral-400">
           Module gating is live — disabled modules are hidden from this client’s sidebar immediately.
         </p>
