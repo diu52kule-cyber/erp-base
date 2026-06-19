@@ -13,7 +13,7 @@ export default async function POSPage() {
 
   const [{ data: session }, { data: products }] = await Promise.all([
     supabase.from('pos_sessions').select('*').eq('org_id', ctx.org.id).eq('status', 'open').maybeSingle(),
-    supabase.from('products').select('id,name,sku,unit_price,gst_rate,stock_qty').eq('org_id', ctx.org.id).gt('stock_qty', 0).order('name'),
+    supabase.from('products').select('id,name,sku,unit_price:selling_price,gst_rate,stock_qty').eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
   ]);
 
   return (
