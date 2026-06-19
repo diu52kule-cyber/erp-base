@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function SignupPage() {
-  const router = useRouter();
+function SignupForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -22,13 +22,14 @@ export default function SignupPage() {
       const data = await res.json();
       if (data.error) {
         setError(data.error);
+        setLoading(false);
       } else {
-        router.push("/onboarding");
-        router.refresh();
+        // Honor ?next= (e.g. accepting a team invite); otherwise go to onboarding.
+        const next = searchParams.get('next');
+        window.location.href = next || "/onboarding";
       }
     } catch {
       setError("Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
     }
   }
@@ -64,5 +65,13 @@ export default function SignupPage() {
         Have an account? <Link href="/login" className="underline">Log in</Link>
       </p>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   );
 }
