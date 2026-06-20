@@ -46,6 +46,9 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
             </div>
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-xs text-neutral-500 hover:text-neutral-900">Forgot password?</Link>
+            </div>
             <button onClick={handleLogin} disabled={loading}
               className="w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">
               {loading ? "Logging in…" : "Log in"}
