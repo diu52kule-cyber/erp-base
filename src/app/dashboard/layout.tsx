@@ -5,6 +5,7 @@ import { MODULES, CATEGORY_LABELS, type ModuleCategory } from "@/lib/modules";
 import { ROLE_LABELS, ROLE_COLORS } from "@/lib/types/roles";
 import type { OrgRole } from "@/lib/types/roles";
 import Sidebar from "@/components/Sidebar";
+import CommandPalette from "@/components/CommandPalette";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -28,6 +29,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .filter((g) => g.items.length > 0);
   const showTrialBanner = ctx.access === "trial" && ctx.trialDaysLeft !== null;
   const role = ctx.org.role as OrgRole;
+  const cmdItems = [
+    { name: "Overview", href: "/dashboard", icon: "🏠" },
+    ...groups.flatMap((g) => g.items.map((m) => ({ name: m.name, href: m.href, icon: m.icon }))),
+    { name: "Settings", href: "/dashboard/settings/preferences", icon: "⚙️" },
+  ];
 
   return (
     <div className="flex h-screen overflow-hidden bg-neutral-50">
@@ -41,7 +47,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         groups={groups}
       />
 
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <CommandPalette items={cmdItems} />
+      <main className="flex flex-1 flex-col overflow-hidden pt-14 md:pt-0">
         {showTrialBanner && (
           <div className={`flex shrink-0 items-center justify-between gap-4 px-8 py-2.5 text-sm ${
             (ctx.trialDaysLeft ?? 0) <= 2 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-800"
