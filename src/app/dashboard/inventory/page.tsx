@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Product } from '@/lib/types/inventory';
 import StockAdjuster from './StockAdjuster';
 import LabelButton from './LabelButton';
+import EmptyState from '@/components/EmptyState';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -51,12 +52,9 @@ export default async function InventoryPage() {
       )}
 
       {!products?.length ? (
-        <div className="rounded-xl border border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500">
-          No products yet.{' '}
-          <Link href="/dashboard/inventory/new" className="text-neutral-900 underline">
-            Add your first product.
-          </Link>
-        </div>
+        <EmptyState icon="📦" title="No products yet"
+          description="Add your first product to start selling at POS and tracking stock."
+          actionLabel="Add Product" actionHref="/dashboard/inventory/new" />
       ) : (
         <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
           <table className="w-full text-sm">

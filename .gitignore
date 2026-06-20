@@ -6,3 +6,8 @@ npm-debug.log*
 .DS_Store
 
 .vercel
+
+# E2E test artifacts
+e2e-shots/
+test-results/
+playwright-report/
