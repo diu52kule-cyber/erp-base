@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { promptDialog, toast } from '@/lib/toast';
 
 type Task = { id: string; title: string; status: string; priority: string; assignee_id: string | null; due_date: string | null; sprint_id: string | null };
 type Sprint = { id: string; name: string; status: string };
@@ -55,11 +56,12 @@ export default function TasksBoard({ initialTasks, sprints, members, activeSprin
   }
 
   async function newSprint() {
-    const name = prompt('Sprint name (e.g. Sprint 1, June W3)');
+    const name = await promptDialog({ title: 'New sprint', placeholder: 'e.g. Sprint 1, June W3', confirmLabel: 'Create' });
     if (!name) return;
     const res = await fetch('/api/sprints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     const data = await res.json();
-    if (data.id) window.location.href = `/dashboard/tasks?sprint=${data.id}`;
+    if (data.id) { toast('Sprint created'); window.location.href = `/dashboard/tasks?sprint=${data.id}`; }
+    else toast(data.error ?? 'Could not create sprint', 'error');
   }
 
   return (

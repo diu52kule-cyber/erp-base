@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ORG_ROLES, ROLE_LABELS, ROLE_COLORS, ROLE_DESCRIPTIONS, canInvite, canManageRoles, canRemoveMember } from '@/lib/types/roles';
 import type { OrgRole } from '@/lib/types/roles';
+import { confirmDialog, toast } from '@/lib/toast';
 
 type Member = { id: string; user_id: string; email: string; role: OrgRole; joined_at: string; is_self: boolean };
 type Invite  = { id: string; email: string; role: OrgRole; token: string; expires_at: string; created_at: string };
@@ -53,8 +54,9 @@ export default function TeamClient({ myRole, appUrl }: { myRole: OrgRole; appUrl
   }
 
   async function removeMember(userId: string) {
-    if (!confirm('Remove this member from the organisation?')) return;
+    if (!(await confirmDialog({ title: 'Remove member', message: 'Remove this member from the organisation? They will lose access immediately.', confirmLabel: 'Remove', danger: true }))) return;
     await fetch(`/api/settings/team/${userId}`, { method: 'DELETE' });
+    toast('Member removed');
     load();
   }
 

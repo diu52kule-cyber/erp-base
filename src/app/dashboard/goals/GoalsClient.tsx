@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { promptDialog, toast } from '@/lib/toast';
 
 type Goal = { id: string; title: string; description: string | null; level: string; quarter: string | null; progress: number; status: string };
 type KR = { id: string; goal_id: string; title: string; target: number; current: number; unit: string | null };
@@ -37,11 +38,14 @@ export default function GoalsClient({ initialGoals, initialKRs }: { initialGoals
     await fetch('/api/goals', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, progress }) });
   }
   async function addKR(goal_id: string) {
-    const title = prompt('Key result (e.g. Acquire 20 cafes)'); if (!title) return;
-    const target = Number(prompt('Target number', '100') || '100');
+    const title = await promptDialog({ title: 'New key result', placeholder: 'e.g. Acquire 20 cafes', confirmLabel: 'Next' });
+    if (!title) return;
+    const targetStr = await promptDialog({ title: 'Target number', placeholder: '100', defaultValue: '100', confirmLabel: 'Add' });
+    const target = Number(targetStr) || 100;
     const res = await fetch('/api/key-results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal_id, title, target }) });
     const data = await res.json();
-    if (data.id) setKRs((k) => [...k, { id: data.id, goal_id, title, target, current: 0, unit: null }]);
+    if (data.id) { setKRs((k) => [...k, { id: data.id, goal_id, title, target, current: 0, unit: null }]); toast('Key result added'); }
+    else toast(data.error ?? 'Could not add key result', 'error');
   }
   async function updateKR(id: string, current: number) {
     setKRs((k) => k.map((x) => x.id === id ? { ...x, current } : x));

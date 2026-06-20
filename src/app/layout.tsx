@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import SelectOnFocus from "@/components/SelectOnFocus";
+import AppOverlays from "@/components/AppOverlays";
 
 export const metadata: Metadata = {
   title: "ERP Base",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <SelectOnFocus />
+        <AppOverlays />
         {children}
       </body>
     </html>

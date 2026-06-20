@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { confirmDialog, toast } from '@/lib/toast';
 
 type Doc = { id: string; title: string; content: string; icon: string; status: string };
 type Version = { id: string; title: string; created_at: string };
@@ -25,8 +26,9 @@ export default function DocEditor({ doc, versions }: { doc: Doc; versions: Versi
   }
 
   async function remove() {
-    if (!confirm('Delete this document? This cannot be undone.')) return;
+    if (!(await confirmDialog({ title: 'Delete document', message: 'Delete this document? This cannot be undone.', confirmLabel: 'Delete', danger: true }))) return;
     await fetch(`/api/docs/${doc.id}`, { method: 'DELETE' });
+    toast('Document deleted');
     window.location.href = '/dashboard/docs';
   }
 

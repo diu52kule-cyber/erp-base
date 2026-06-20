@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { confirmDialog, toast } from '@/lib/toast';
 
 type Attachment = {
   id: string;
@@ -65,9 +66,10 @@ export default function AttachmentPanel({
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete "${name}"?`)) return;
+    if (!(await confirmDialog({ title: 'Delete file', message: `Delete "${name}"? This cannot be undone.`, confirmLabel: 'Delete', danger: true }))) return;
     await fetch(`/api/attachments/${id}`, { method: 'DELETE' });
     setAttachments((prev) => prev.filter((a) => a.id !== id));
+    toast('File deleted');
   }
 
   return (

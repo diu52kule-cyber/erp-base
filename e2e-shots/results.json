@@ -1,0 +1,255 @@
+{
+  "ownerEmail": "dummy.owner.1781929852632@example.com",
+  "results": [
+    {
+      "status": "PASS",
+      "name": "Owner signup",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Onboard \"Dummy\" startup",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Dashboard loads",
+      "info": ""
+    },
+    {
+      "status": "FAIL",
+      "name": "Tasks: add a task",
+      "info": "locator.click: Timeout 30000ms exceeded."
+    },
+    {
+      "status": "FAIL",
+      "name": "Docs: create from PRD template",
+      "info": "page.waitForURL: Timeout 15000ms exceeded."
+    },
+    {
+      "status": "FAIL",
+      "name": "Goals: add objective",
+      "info": "locator.fill: Timeout 30000ms exceeded."
+    },
+    {
+      "status": "FAIL",
+      "name": "Issues: report issue",
+      "info": "locator.click: Timeout 30000ms exceeded."
+    },
+    {
+      "status": "FAIL",
+      "name": "Meetings: create meeting",
+      "info": "locator.fill: Timeout 30000ms exceeded."
+    },
+    {
+      "status": "PASS",
+      "name": "CRM: add contact",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Billing: open new invoice form",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Check-in: submit",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite admin",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "admin sees",
+      "info": "🏠 | Overview | BUSINESS | 🧾 | Billing & Invoicing | 💳 | Payments | 🤝 | CRM | 👥 | HR | 🔄 | Subscriptions | 🧮 | Expenses | 📈 | GST & Accounting | 📉 | Reports | WORKSPACE | 📊 | Projects | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 🎯 | Goals & OKRs | 🚀 | Product Pipeline | 📝 | Meetings | 🐞 | Issues & Bugs | 🏷️ | Releases | ⚖️ | Decision Log | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as admin",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite manager",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "manager sees",
+      "info": "🏠 | Overview | BUSINESS | 🧾 | Billing & Invoicing | 💳 | Payments | 🤝 | CRM | 👥 | HR | 🔄 | Subscriptions | 🧮 | Expenses | 📈 | GST & Accounting | 📉 | Reports | WORKSPACE | 📊 | Projects | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 🎯 | Goals & OKRs | 🚀 | Product Pipeline | 📝 | Meetings | 🐞 | Issues & Bugs | 🏷️ | Releases | ⚖️ | Decision Log | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as manager",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite accountant",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "accountant sees",
+      "info": "🏠 | Overview | BUSINESS | 🧾 | Billing & Invoicing | 💳 | Payments | 🔄 | Subscriptions | 🧮 | Expenses | 📈 | GST & Accounting | 📉 | Reports | WORKSPACE | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | ⚖️ | Decision Log | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as accountant",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite hr",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "hr sees",
+      "info": "🏠 | Overview | BUSINESS | 👥 | HR | 🧮 | Expenses | 📉 | Reports | WORKSPACE | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 🎯 | Goals & OKRs | 📝 | Meetings | ⚖️ | Decision Log | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as hr",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite sales",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "sales sees",
+      "info": "🏠 | Overview | BUSINESS | 🧾 | Billing & Invoicing | 💳 | Payments | 🤝 | CRM | 🔄 | Subscriptions | 📉 | Reports | WORKSPACE | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 📝 | Meetings | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as sales",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite marketing",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "marketing sees",
+      "info": "🏠 | Overview | BUSINESS | 🤝 | CRM | 📉 | Reports | WORKSPACE | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 🎯 | Goals & OKRs | 📝 | Meetings | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as marketing",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite developer",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "developer sees",
+      "info": "🏠 | Overview | WORKSPACE | 📊 | Projects | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 🚀 | Product Pipeline | 🐞 | Issues & Bugs | 🏷️ | Releases | ⚖️ | Decision Log | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as developer",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite designer",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "designer sees",
+      "info": "🏠 | Overview | WORKSPACE | 📊 | Projects | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 🚀 | Product Pipeline | 📝 | Meetings | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as designer",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite support",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "support sees",
+      "info": "🏠 | Overview | BUSINESS | 🤝 | CRM | WORKSPACE | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 🐞 | Issues & Bugs | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as support",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite operations",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "operations sees",
+      "info": "🏠 | Overview | BUSINESS | 📉 | Reports | WORKSPACE | 📊 | Projects | ✅ | Tasks & Sprints | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as operations",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite cashier",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "cashier sees",
+      "info": "🏠 | Overview | WORKSPACE | ☀️ | Daily Check-ins"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as cashier",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite staff",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "staff sees",
+      "info": "🏠 | Overview | WORKSPACE | 📊 | Projects | 📚 | Docs & Knowledge | ✅ | Tasks & Sprints | 🚀 | Product Pipeline | 📝 | Meetings | 🐞 | Issues & Bugs | ☀️ | Daily Check-ins | ✨ | AI Assistant"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as staff",
+      "info": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Invite viewer",
+      "info": ""
+    },
+    {
+      "status": "INFO",
+      "name": "viewer sees",
+      "info": "🏠 | Overview | BUSINESS | 📉 | Reports | WORKSPACE | 📚 | Docs & Knowledge"
+    },
+    {
+      "status": "PASS",
+      "name": "Join + view as viewer",
+      "info": ""
+    }
+  ]
+}
