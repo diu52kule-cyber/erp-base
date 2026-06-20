@@ -8,6 +8,7 @@ export type InvoiceItem = {
   invoice_id: string;
   org_id: string;
   description: string;
+  hsn_code?: string | null;
   quantity: number;
   unit_price: number;
   gst_rate: number;

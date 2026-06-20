@@ -36,6 +36,9 @@ input, select, textarea { transition: border-color .15s ease, box-shadow .15s ea
   #label-print-area, #label-print-area * { visibility: visible !important; }
   #label-print-area { position: absolute; left: 0; top: 0; display: flex; flex-wrap: wrap; gap: 2mm; }
   .label-card { break-inside: avoid; page-break-inside: avoid; border: none !important; box-shadow: none !important; }
+  /* Invoice */
+  #invoice-print-area, #invoice-print-area * { visibility: visible !important; }
+  #invoice-print-area { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; border-radius: 0 !important; }
   .no-print { display: none !important; }
 }
 

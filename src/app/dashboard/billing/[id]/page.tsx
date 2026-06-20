@@ -6,6 +6,7 @@ import type { Invoice, InvoiceItem, InvoiceStatus } from '@/lib/types/billing';
 import StatusButton from './StatusButton';
 import InvoiceActions from './InvoiceActions';
 import AttachmentPanel from '@/components/AttachmentPanel';
+import PrintButton from '@/components/PrintButton';
 
 const STATUS_STYLES: Record<InvoiceStatus, string> = {
   draft: 'bg-neutral-100 text-neutral-600',
@@ -42,6 +43,14 @@ export default async function InvoiceDetailPage({
   if (!invoice) notFound();
 
   const items = invoice.invoice_items ?? [];
+
+  // Seller details for the invoice header ("From" block)
+  const [{ data: org }, { data: acct }] = await Promise.all([
+    supabase.from('organizations').select('name, city, phone, business_type').eq('id', ctx.org!.id).maybeSingle(),
+    supabase.from('accounting_settings').select('gstin, state_code').eq('org_id', ctx.org!.id).maybeSingle(),
+  ]);
+  const sellerName = org?.name ?? ctx.org?.name ?? '';
+  const sellerGstin = acct?.gstin ?? null;
 
   return (
     <div className="space-y-6">
@@ -87,63 +96,81 @@ export default async function InvoiceDetailPage({
               currentStatus={invoice.status as InvoiceStatus}
             />
           </div>
-          <InvoiceActions invoiceId={invoice.id} hasEmail={!!invoice.customer_email} />
+          <div className="flex items-center gap-2">
+            <PrintButton />
+            <InvoiceActions invoiceId={invoice.id} hasEmail={!!invoice.customer_email} />
+          </div>
         </div>
       </div>
 
-      {/* Invoice card */}
-      <div className="space-y-8 rounded-xl border border-neutral-200 bg-white p-8">
-        {/* Bill-to */}
-        <div>
-          <p className="mb-1 text-xs uppercase tracking-wide text-neutral-500">
-            Bill To
-          </p>
-          <p className="font-semibold">{invoice.customer_name}</p>
-          {invoice.customer_email && (
-            <p className="text-sm text-neutral-600">{invoice.customer_email}</p>
-          )}
-          {invoice.customer_gstin && (
-            <p className="font-mono text-sm text-neutral-600">
-              GSTIN: {invoice.customer_gstin}
-            </p>
-          )}
-          {invoice.billing_address && (
-            <p className="text-sm text-neutral-600">{invoice.billing_address}</p>
-          )}
+      {/* Invoice card (printable) */}
+      <div id="invoice-print-area" className="rounded-xl border border-neutral-200 bg-white p-8 sm:p-10">
+        {/* Header: seller + INVOICE */}
+        <div className="flex flex-wrap items-start justify-between gap-6 border-b border-neutral-200 pb-6">
+          <div>
+            <div className="text-xl font-bold text-neutral-900">{sellerName}</div>
+            <div className="mt-0.5 text-sm capitalize text-neutral-500">
+              {org?.business_type}{org?.city ? ` · ${org.city}` : ''}
+            </div>
+            {org?.phone && <div className="text-sm text-neutral-500">{org.phone}</div>}
+            {sellerGstin && <div className="font-mono text-sm text-neutral-500">GSTIN: {sellerGstin}</div>}
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold tracking-tight text-neutral-900">INVOICE</div>
+            <div className="mt-1 font-mono text-sm text-neutral-500">{invoice.invoice_number}</div>
+            <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[invoice.status as InvoiceStatus] ?? STATUS_STYLES.draft}`}>
+              {invoice.status}
+            </span>
+          </div>
+        </div>
+
+        {/* Bill-to + dates */}
+        <div className="mt-6 flex flex-wrap justify-between gap-6">
+          <div>
+            <p className="mb-1 text-xs uppercase tracking-wide text-neutral-400">Bill To</p>
+            <p className="font-semibold text-neutral-900">{invoice.customer_name}</p>
+            {invoice.customer_email && <p className="text-sm text-neutral-600">{invoice.customer_email}</p>}
+            {invoice.customer_gstin && <p className="font-mono text-sm text-neutral-600">GSTIN: {invoice.customer_gstin}</p>}
+            {invoice.billing_address && <p className="max-w-xs text-sm text-neutral-600">{invoice.billing_address}</p>}
+          </div>
+          <div className="text-sm">
+            <div className="flex justify-between gap-8">
+              <span className="text-neutral-400">Issue date</span>
+              <span className="text-neutral-700">{new Date(invoice.issue_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            </div>
+            {invoice.due_date && (
+              <div className="mt-1 flex justify-between gap-8">
+                <span className="text-neutral-400">Due date</span>
+                <span className="text-neutral-700">{new Date(invoice.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Line items */}
-        <div className="overflow-x-auto">
+        <div className="mt-8 overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-neutral-100 text-neutral-500">
-              <tr>
+            <thead>
+              <tr className="border-b-2 border-neutral-200 text-xs uppercase tracking-wide text-neutral-400">
                 <th className="pb-2 text-left font-medium">Description</th>
+                {items.some((i) => i.hsn_code) && <th className="pb-2 text-right font-medium">HSN</th>}
                 <th className="pb-2 text-right font-medium">Qty</th>
-                <th className="pb-2 text-right font-medium">Unit Price</th>
-                <th className="pb-2 text-right font-medium">GST %</th>
-                <th className="pb-2 text-right font-medium">GST Amt</th>
-                <th className="pb-2 text-right font-medium">Total</th>
+                <th className="pb-2 text-right font-medium">Rate</th>
+                <th className="pb-2 text-right font-medium">GST%</th>
+                <th className="pb-2 text-right font-medium">GST</th>
+                <th className="pb-2 text-right font-medium">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-50">
+            <tbody className="divide-y divide-neutral-100">
               {items.map((item) => (
                 <tr key={item.id}>
-                  <td className="py-3">{item.description}</td>
-                  <td className="py-3 text-right text-neutral-600">
-                    {item.quantity}
-                  </td>
-                  <td className="py-3 text-right text-neutral-600">
-                    {fmt(item.unit_price)}
-                  </td>
-                  <td className="py-3 text-right text-neutral-600">
-                    {item.gst_rate}%
-                  </td>
-                  <td className="py-3 text-right text-neutral-600">
-                    {fmt(item.gst_amount)}
-                  </td>
-                  <td className="py-3 text-right font-medium">
-                    {fmt(item.amount + item.gst_amount)}
-                  </td>
+                  <td className="py-3 pr-2">{item.description}</td>
+                  {items.some((i) => i.hsn_code) && <td className="py-3 text-right font-mono text-xs text-neutral-500">{item.hsn_code ?? '—'}</td>}
+                  <td className="py-3 text-right text-neutral-600">{item.quantity}</td>
+                  <td className="py-3 text-right text-neutral-600">{fmt(item.unit_price)}</td>
+                  <td className="py-3 text-right text-neutral-600">{item.gst_rate}%</td>
+                  <td className="py-3 text-right text-neutral-600">{fmt(item.gst_amount)}</td>
+                  <td className="py-3 text-right font-medium">{fmt(item.amount + item.gst_amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -151,36 +178,35 @@ export default async function InvoiceDetailPage({
         </div>
 
         {/* Totals */}
-        <div className="flex justify-end">
-          <div className="w-64 space-y-2 border-t border-neutral-100 pt-4 text-sm">
+        <div className="mt-6 flex justify-end">
+          <div className="w-64 space-y-2 text-sm">
             <div className="flex justify-between text-neutral-600">
-              <span>Subtotal</span>
-              <span>{fmt(invoice.subtotal)}</span>
+              <span>Subtotal</span><span>{fmt(invoice.subtotal)}</span>
             </div>
             <div className="flex justify-between text-neutral-600">
-              <span>GST</span>
-              <span>{fmt(invoice.gst_amount)}</span>
+              <span>GST</span><span>{fmt(invoice.gst_amount)}</span>
             </div>
-            <div className="flex justify-between border-t border-neutral-200 pt-2 text-base font-semibold">
-              <span>Total</span>
-              <span>{fmt(invoice.total)}</span>
+            <div className="mt-1 flex justify-between rounded-lg bg-neutral-900 px-3 py-2.5 text-base font-semibold text-white">
+              <span>Total</span><span>{fmt(invoice.total)}</span>
             </div>
           </div>
         </div>
 
         {/* Notes */}
         {invoice.notes && (
-          <div className="border-t border-neutral-100 pt-4">
-            <p className="mb-1 text-xs uppercase tracking-wide text-neutral-500">
-              Notes
-            </p>
+          <div className="mt-8 border-t border-neutral-100 pt-4">
+            <p className="mb-1 text-xs uppercase tracking-wide text-neutral-400">Notes</p>
             <p className="text-sm text-neutral-600">{invoice.notes}</p>
           </div>
         )}
+
+        <p className="mt-10 border-t border-neutral-100 pt-4 text-center text-xs text-neutral-400">
+          Thank you for your business · {sellerName}
+        </p>
       </div>
 
-      {/* Attachments */}
-      <div className="rounded-xl border border-neutral-200 bg-white p-6">
+      {/* Attachments (not printed) */}
+      <div className="no-print rounded-xl border border-neutral-200 bg-white p-6">
         <AttachmentPanel entityType="invoice" entityId={invoice.id} />
       </div>
     </div>
