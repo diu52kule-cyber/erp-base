@@ -18,7 +18,7 @@ export default async function DashboardHome() {
   const has = (k: string) => ctx.enabledModules.has(k);
 
   // Fetch only the KPIs relevant to this org's enabled modules, in parallel.
-  const [invoices, productCount, contactCount, employeeCount] = await Promise.all([
+  const [invoices, productCount, contactCount, employeeCount, ledger] = await Promise.all([
     has("billing")
       ? supabase.from("invoices").select("total,status").eq("org_id", orgId)
       : Promise.resolve({ data: null }),
@@ -31,9 +31,14 @@ export default async function DashboardHome() {
     has("hr")
       ? supabase.from("employees").select("id", { count: "exact", head: true }).eq("org_id", orgId)
       : Promise.resolve({ count: null }),
+    has("ledger")
+      ? supabase.from("ledger_entries").select("amount").eq("org_id", orgId)
+      : Promise.resolve({ data: null }),
   ]);
 
   const invRows = (invoices as { data: { total: number; status: string }[] | null }).data ?? [];
+  const ledgerRows = (ledger as { data: { amount: number }[] | null }).data ?? [];
+  const receivable = ledgerRows.reduce((s, e) => s + (Number(e.amount) > 0 ? Number(e.amount) : 0), 0);
   const revenue = invRows.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.total ?? 0), 0);
   const unpaid = invRows.filter((i) => i.status !== "paid" && i.status !== "draft").length;
 
@@ -42,6 +47,7 @@ export default async function DashboardHome() {
     kpis.push({ label: "Revenue collected", value: fmt(revenue), href: "/dashboard/billing", accent: "text-green-600" });
     kpis.push({ label: "Unpaid invoices", value: String(unpaid), href: "/dashboard/billing", accent: unpaid > 0 ? "text-amber-600" : "" });
   }
+  if (has("ledger")) kpis.push({ label: "Credit outstanding", value: fmt(receivable), href: "/dashboard/ledger", accent: receivable > 0 ? "text-amber-600" : "" });
   if (has("inventory")) kpis.push({ label: "Products", value: String((productCount as { count: number | null }).count ?? 0), href: "/dashboard/inventory" });
   if (has("crm")) kpis.push({ label: "Contacts", value: String((contactCount as { count: number | null }).count ?? 0), href: "/dashboard/crm" });
   if (has("hr")) kpis.push({ label: "Employees", value: String((employeeCount as { count: number | null }).count ?? 0), href: "/dashboard/hr" });

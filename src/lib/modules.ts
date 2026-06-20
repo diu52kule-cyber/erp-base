@@ -12,6 +12,7 @@ export const MODULES: ModuleDef[] = [
   // ── Business / operations ──
   { key: "billing",       name: "Billing & Invoicing",   href: "/dashboard/billing",       icon: "🧾", category: "business" },
   { key: "payments",      name: "Payments",              href: "/dashboard/payments",      icon: "💳", category: "business" },
+  { key: "ledger",        name: "Credit & Ledger",       href: "/dashboard/ledger",        icon: "📒", category: "business" },
   { key: "inventory",     name: "Inventory",             href: "/dashboard/inventory",     icon: "📦", category: "business" },
   { key: "pos",           name: "Point of Sale",         href: "/dashboard/pos",           icon: "🛒", category: "business" },
   { key: "purchase",      name: "Purchase Orders",       href: "/dashboard/purchase",      icon: "📥", category: "business" },
@@ -51,15 +52,15 @@ export const CATEGORY_LABELS: Record<ModuleCategory, string> = {
 const TEAM_BASICS = ["docs", "tasks", "checkins"]; // light collaboration for any team
 
 export const BUSINESS_PRESETS: Record<string, string[]> = {
-  cafe:         ["billing", "payments", "pos", "inventory", "purchase", "expenses", "accounting", "reports", ...TEAM_BASICS],
-  shop:         ["billing", "payments", "pos", "inventory", "purchase", "crm", "accounting", "reports", ...TEAM_BASICS],
-  distributor:  ["billing", "payments", "inventory", "purchase", "crm", "accounting", "reports", "import", ...TEAM_BASICS],
-  manufacturer: ["billing", "payments", "inventory", "purchase", "accounting", "reports", "import", "projects", ...TEAM_BASICS],
+  cafe:         ["billing", "payments", "ledger", "pos", "inventory", "purchase", "expenses", "accounting", "reports", ...TEAM_BASICS],
+  shop:         ["billing", "payments", "ledger", "pos", "inventory", "purchase", "crm", "accounting", "reports", ...TEAM_BASICS],
+  distributor:  ["billing", "payments", "ledger", "inventory", "purchase", "crm", "accounting", "reports", "import", ...TEAM_BASICS],
+  manufacturer: ["billing", "payments", "ledger", "inventory", "purchase", "accounting", "reports", "import", "projects", ...TEAM_BASICS],
   freelancer:   ["billing", "payments", "projects", "expenses", "crm", "accounting", "reports",
                  "docs", "tasks", "goals", "meetings", "decisions", "checkins", "assistant"],
   startup:      ["billing", "payments", "crm", "hr", "subscriptions", "projects", "expenses", "accounting", "reports",
                  ...WORKSPACE_MODULE_KEYS],
-  mall:         ["billing", "payments", "pos", "inventory", "purchase", "hr", "accounting", "reports", "import", ...TEAM_BASICS],
+  mall:         ["billing", "payments", "ledger", "pos", "inventory", "purchase", "hr", "accounting", "reports", "import", ...TEAM_BASICS],
   general:      ALL_MODULE_KEYS,
 };
 

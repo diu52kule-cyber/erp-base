@@ -72,7 +72,7 @@ export const ROLE_MODULES: Record<OrgRole, string[] | 'all'> = {
   admin:   'all',
   manager: 'all',
   accountant: [
-    'billing', 'payments', 'accounting', 'reports', 'expenses', 'purchase', 'subscriptions', 'import',
+    'billing', 'payments', 'ledger', 'accounting', 'reports', 'expenses', 'purchase', 'subscriptions', 'import',
     'docs', 'tasks', 'checkins', 'decisions', 'assistant',
   ],
   hr: [
@@ -80,7 +80,7 @@ export const ROLE_MODULES: Record<OrgRole, string[] | 'all'> = {
     'docs', 'tasks', 'goals', 'meetings', 'checkins', 'decisions', 'assistant',
   ],
   sales: [
-    'crm', 'billing', 'payments', 'pos', 'subscriptions', 'reports',
+    'crm', 'billing', 'payments', 'ledger', 'pos', 'subscriptions', 'reports',
     'docs', 'tasks', 'meetings', 'checkins', 'assistant',
   ],
   marketing: [
