@@ -47,9 +47,9 @@ export default async function InvoiceDetailPage({
   // Seller details for the invoice header ("From" block)
   const [{ data: org }, { data: acct }] = await Promise.all([
     supabase.from('organizations').select('name, city, phone, business_type').eq('id', ctx.org!.id).maybeSingle(),
-    supabase.from('accounting_settings').select('gstin, state_code').eq('org_id', ctx.org!.id).maybeSingle(),
+    supabase.from('org_gst_settings').select('gstin, legal_name').eq('org_id', ctx.org!.id).maybeSingle(),
   ]);
-  const sellerName = org?.name ?? ctx.org?.name ?? '';
+  const sellerName = acct?.legal_name || org?.name || ctx.org?.name || '';
   const sellerGstin = acct?.gstin ?? null;
 
   return (
