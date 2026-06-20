@@ -166,9 +166,12 @@ modules; the platform enables only what each customer's plan includes.
 > loyalty CRM, hardware) and the security hardening backlog (RLS-by-role, API-level guards).
 
 ### Known gaps / hardening backlog (do before scaling users)
-- **Role/trial enforcement is UI-level only.** Module gating + trial-lock are enforced in
-  `getOrgContext`/page guards, NOT in RLS or most write APIs. Add **RLS policies keyed on role**
-  and `access !== 'locked'` + role checks to module write routes.
+- **Role enforcement:** UI via `getOrgContext`, AND **DB-level via RLS** — `role_modules` map +
+  `has_module_access(org_id, module)` replace the permissive "org members" policies on tenant
+  tables (migration `0026_rls_by_role.sql`; owner/admin/manager always full access). Since API
+  routes query with the user session, this enforces role for both browser-direct queries and the
+  app's APIs. **Run 0026 to activate.**
+- **Trial-lock is still UI-level only** (dashboard redirect to `/locked`); not enforced in RLS yet.
 - **Invites are bearer links** — acceptance doesn't verify the logged-in email matches the invited
   email. Add an email match check if invites should be locked to the recipient.
 - **AI Assistant** has no usage metering/caps — gate behind a paid tier + per-org limits before
