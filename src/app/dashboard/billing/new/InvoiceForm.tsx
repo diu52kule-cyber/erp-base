@@ -5,6 +5,7 @@ import { GST_RATES } from '@/lib/types/billing';
 import { INDIAN_STATES } from '@/lib/types/accounting';
 import { useFormDraft } from '@/lib/useFormDraft';
 import ProductPicker, { type PickProduct } from '@/components/ProductPicker';
+import ContactPicker, { type PickContact } from '@/components/ContactPicker';
 
 type LineItem = {
   description: string;
@@ -32,9 +33,10 @@ function fmt(n: number) {
   }).format(n);
 }
 
-export default function InvoiceForm({ defaultGst = 18, products = [] }: { defaultGst?: number; products?: PickProduct[] }) {
+export default function InvoiceForm({ defaultGst = 18, products = [], contacts = [] }: { defaultGst?: number; products?: PickProduct[]; contacts?: PickContact[] }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     customer_name: '',
@@ -85,6 +87,7 @@ export default function InvoiceForm({ defaultGst = 18, products = [] }: { defaul
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          customer_id: customerId,
           items: items.map(({ description, hsn_code, quantity, unit_price, gst_rate }) => ({
             description, hsn_code: hsn_code.trim() || null, quantity, unit_price, gst_rate,
           })),
@@ -117,10 +120,13 @@ export default function InvoiceForm({ defaultGst = 18, products = [] }: { defaul
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm text-neutral-600">Customer Name *</label>
-            <input type="text" value={form.customer_name}
-              onChange={(e) => setForm((f) => ({ ...f, customer_name: e.target.value }))}
-              placeholder="Business or person name"
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            <ContactPicker
+              value={form.customer_name}
+              contacts={contacts}
+              onChange={(v) => { setForm((f) => ({ ...f, customer_name: v })); setCustomerId(null); }}
+              onPick={(c) => { setCustomerId(c.id); setForm((f) => ({ ...f, customer_name: c.name, customer_email: c.email ?? f.customer_email, customer_gstin: c.gstin ?? f.customer_gstin, billing_address: c.address ?? f.billing_address })); }}
+              placeholder="Search a customer or type a new name" />
+            {customerId && <p className="mt-1 text-xs text-green-600">● Linked to customer — will post to their ledger</p>}
           </div>
           <div>
             <label className="mb-1 block text-sm text-neutral-600">Email</label>

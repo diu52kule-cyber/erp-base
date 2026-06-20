@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
     .insert({
       org_id: ctx.org.id,
       invoice_number: invoiceNumber as string,
+      customer_id: (input as { customer_id?: string }).customer_id || null,
       customer_name: input.customer_name.trim(),
       customer_email: input.customer_email?.trim() || null,
       customer_gstin: input.customer_gstin?.trim() || null,
@@ -116,6 +117,24 @@ export async function POST(req: NextRequest) {
 
   if (itemsErr) {
     return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+  }
+
+  // Auto-post to the customer's credit ledger (receivable) if linked + ledger enabled.
+  const customerId = (input as { customer_id?: string }).customer_id;
+  if (customerId && ctx.enabledModules.has('ledger')) {
+    try {
+      await supabase.from('ledger_entries').insert({
+        org_id: ctx.org.id,
+        contact_id: customerId,
+        type: 'credit',
+        amount: total,
+        note: `Invoice ${invoiceNumber}`,
+        reference_type: 'invoice',
+        reference_id: invoice.id,
+        entry_date: input.issue_date,
+        created_by: ctx.user.id,
+      });
+    } catch { /* ledger optional — never block invoice creation */ }
   }
 
   return NextResponse.json({ id: invoice.id });

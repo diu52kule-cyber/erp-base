@@ -11,10 +11,12 @@ export default async function NewInvoicePage() {
   const cfg = bizConfig(ctx.org?.business_type);
 
   const supabase = createClient();
-  const { data: products } = await supabase
-    .from('products')
-    .select('id,name,sku,unit_price:selling_price,gst_rate')
-    .eq('org_id', ctx.org.id).eq('is_active', true).order('name');
+  const [{ data: products }, { data: contacts }] = await Promise.all([
+    supabase.from('products').select('id,name,sku,unit_price:selling_price,gst_rate')
+      .eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
+    supabase.from('contacts').select('id,name,company,email,gstin,address')
+      .eq('org_id', ctx.org.id).order('name'),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -27,7 +29,7 @@ export default async function NewInvoicePage() {
         </Link>
         <h1 className="text-2xl font-semibold">New Invoice</h1>
       </div>
-      <InvoiceForm defaultGst={cfg.defaultGst} products={(products ?? []) as never} />
+      <InvoiceForm defaultGst={cfg.defaultGst} products={(products ?? []) as never} contacts={(contacts ?? []) as never} />
     </div>
   );
 }

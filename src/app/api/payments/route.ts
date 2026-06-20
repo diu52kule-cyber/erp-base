@@ -28,11 +28,30 @@ export async function POST(req: NextRequest) {
   if (payErr) return NextResponse.json({ error: payErr.message }, { status: 500 });
 
   if (input.invoiceId) {
-    await supabase
+    const { data: inv } = await supabase
       .from('invoices')
       .update({ status: 'paid' })
       .eq('id', input.invoiceId)
-      .eq('org_id', ctx.org.id);
+      .eq('org_id', ctx.org.id)
+      .select('customer_id, invoice_number')
+      .maybeSingle();
+
+    // Auto-post payment to the customer's ledger (reduces receivable).
+    if (inv?.customer_id && ctx.enabledModules.has('ledger')) {
+      try {
+        await supabase.from('ledger_entries').insert({
+          org_id: ctx.org.id,
+          contact_id: inv.customer_id,
+          type: 'payment',
+          amount: -Math.abs(Number(input.amount) || 0),
+          note: `Payment for ${inv.invoice_number ?? 'invoice'}`,
+          reference_type: 'payment',
+          reference_id: input.invoiceId,
+          entry_date: input.paidAt,
+          created_by: ctx.user.id,
+        });
+      } catch { /* ledger optional */ }
+    }
   }
 
   return NextResponse.json({ success: true });
