@@ -1,11 +1,30 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import SelectOnFocus from "@/components/SelectOnFocus";
 import AppOverlays from "@/components/AppOverlays";
 
 export const metadata: Metadata = {
-  title: "ERP Base",
-  description: "Modular business management platform for Indian SMBs",
+  metadataBase: new URL("https://erp-base-eight.vercel.app"),
+  title: {
+    default: "ERP Base — Run your business & team in one place",
+    template: "%s · ERP Base",
+  },
+  description:
+    "Modular business management for Indian SMBs: billing, GST, POS, inventory, CRM, HR — plus a full startup workspace (docs, tasks, OKRs).",
+  applicationName: "ERP Base",
+  openGraph: {
+    title: "ERP Base",
+    description: "Run your whole business — and your whole team — in one place.",
+    type: "website",
+    siteName: "ERP Base",
+  },
+  twitter: { card: "summary_large_image", title: "ERP Base", description: "Run your whole business — and your whole team — in one place." },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#6366f1",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

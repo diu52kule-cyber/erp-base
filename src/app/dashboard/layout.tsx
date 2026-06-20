@@ -5,6 +5,9 @@ import { MODULES, CATEGORY_LABELS, type ModuleCategory } from "@/lib/modules";
 import { ROLE_LABELS, ROLE_COLORS } from "@/lib/types/roles";
 import type { OrgRole } from "@/lib/types/roles";
 import Sidebar from "@/components/Sidebar";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getOrgContext();
