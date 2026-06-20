@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { GST_RATES } from '@/lib/types/billing';
 import type { Contact } from '@/lib/types/crm';
+import ProductPicker, { type PickProduct } from '@/components/ProductPicker';
 
 type LineItem = { description: string; product_id: string; quantity: number; unit_price: number; gst_rate: number };
 
@@ -12,7 +13,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
 }
 
-export default function PurchaseOrderForm({ vendors }: { vendors: Contact[] }) {
+export default function PurchaseOrderForm({ vendors, products = [] }: { vendors: Contact[]; products?: PickProduct[] }) {
   const [pending, setPending] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const [vendorId, setVendorId]       = useState('');
@@ -134,9 +135,12 @@ export default function PurchaseOrderForm({ vendors }: { vendors: Contact[] }) {
         </div>
         {items.map((item, i) => (
           <div key={i} className="grid grid-cols-[1fr_72px_110px_90px_96px_32px] items-center gap-2">
-            <input type="text" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)}
-              placeholder="Item / product description"
-              className="rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            <ProductPicker
+              value={item.description}
+              products={products}
+              onChange={(v) => updateItem(i, 'description', v)}
+              onPick={(p) => setItems((prev) => prev.map((it, j) => j === i ? { ...it, description: p.name, product_id: p.id, unit_price: p.unit_price, gst_rate: p.gst_rate } : it))}
+              placeholder="Item / product description" />
             <input type="number" value={item.quantity} min="0" step="0.001"
               onChange={(e) => updateItem(i, 'quantity', parseFloat(e.target.value) || 0)}
               className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />

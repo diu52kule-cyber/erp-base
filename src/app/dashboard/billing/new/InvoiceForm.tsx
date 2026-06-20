@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { GST_RATES } from '@/lib/types/billing';
 import { INDIAN_STATES } from '@/lib/types/accounting';
 import { useFormDraft } from '@/lib/useFormDraft';
+import ProductPicker, { type PickProduct } from '@/components/ProductPicker';
 
 type LineItem = {
   description: string;
@@ -31,7 +32,7 @@ function fmt(n: number) {
   }).format(n);
 }
 
-export default function InvoiceForm({ defaultGst = 18 }: { defaultGst?: number }) {
+export default function InvoiceForm({ defaultGst = 18, products = [] }: { defaultGst?: number; products?: PickProduct[] }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -199,10 +200,12 @@ export default function InvoiceForm({ defaultGst = 18 }: { defaultGst?: number }
 
           {items.map((item, index) => (
             <div key={index} className="grid grid-cols-[1fr_90px_72px_110px_90px_96px_32px] items-center gap-2">
-              <input type="text" value={item.description}
-                onChange={(e) => updateItem(index, 'description', e.target.value)}
-                placeholder="Item description"
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              <ProductPicker
+                value={item.description}
+                products={products}
+                onChange={(v) => updateItem(index, 'description', v)}
+                onPick={(p) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate } : it))}
+                placeholder="Item description" />
               <input type="text" value={item.hsn_code}
                 onChange={(e) => updateItem(index, 'hsn_code', e.target.value.replace(/\D/g, ''))}
                 placeholder="9983" maxLength={8}

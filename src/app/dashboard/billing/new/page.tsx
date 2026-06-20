@@ -1,13 +1,20 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getOrgContext } from '@/lib/entitlements';
+import { createClient } from '@/lib/supabase/server';
 import { bizConfig } from '@/lib/businessConfig';
 import InvoiceForm from './InvoiceForm';
 
 export default async function NewInvoicePage() {
   const ctx = await getOrgContext();
-  if (!ctx?.enabledModules.has('billing')) redirect('/dashboard');
+  if (!ctx?.enabledModules.has('billing') || !ctx.org) redirect('/dashboard');
   const cfg = bizConfig(ctx.org?.business_type);
+
+  const supabase = createClient();
+  const { data: products } = await supabase
+    .from('products')
+    .select('id,name,sku,unit_price:selling_price,gst_rate')
+    .eq('org_id', ctx.org.id).eq('is_active', true).order('name');
 
   return (
     <div className="space-y-4">
@@ -20,7 +27,7 @@ export default async function NewInvoicePage() {
         </Link>
         <h1 className="text-2xl font-semibold">New Invoice</h1>
       </div>
-      <InvoiceForm defaultGst={cfg.defaultGst} />
+      <InvoiceForm defaultGst={cfg.defaultGst} products={(products ?? []) as never} />
     </div>
   );
 }
