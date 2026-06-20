@@ -51,15 +51,30 @@ export const CATEGORY_LABELS: Record<ModuleCategory, string> = {
 const TEAM_BASICS = ["docs", "tasks", "checkins"]; // light collaboration for any team
 
 export const BUSINESS_PRESETS: Record<string, string[]> = {
-  cafe:       ["billing", "payments", "pos", "inventory", "purchase", "expenses", "accounting", "reports", ...TEAM_BASICS],
-  shop:       ["billing", "payments", "pos", "inventory", "purchase", "crm", "accounting", "reports", ...TEAM_BASICS],
-  freelancer: ["billing", "payments", "projects", "expenses", "crm", "accounting", "reports",
-               "docs", "tasks", "goals", "meetings", "decisions", "checkins", "assistant"],
-  startup:    ["billing", "payments", "crm", "hr", "subscriptions", "projects", "expenses", "accounting", "reports",
-               ...WORKSPACE_MODULE_KEYS],
-  mall:       ["billing", "payments", "pos", "inventory", "purchase", "hr", "accounting", "reports", "import", ...TEAM_BASICS],
-  general:    ALL_MODULE_KEYS,
+  cafe:         ["billing", "payments", "pos", "inventory", "purchase", "expenses", "accounting", "reports", ...TEAM_BASICS],
+  shop:         ["billing", "payments", "pos", "inventory", "purchase", "crm", "accounting", "reports", ...TEAM_BASICS],
+  distributor:  ["billing", "payments", "inventory", "purchase", "crm", "accounting", "reports", "import", ...TEAM_BASICS],
+  manufacturer: ["billing", "payments", "inventory", "purchase", "accounting", "reports", "import", "projects", ...TEAM_BASICS],
+  freelancer:   ["billing", "payments", "projects", "expenses", "crm", "accounting", "reports",
+                 "docs", "tasks", "goals", "meetings", "decisions", "checkins", "assistant"],
+  startup:      ["billing", "payments", "crm", "hr", "subscriptions", "projects", "expenses", "accounting", "reports",
+                 ...WORKSPACE_MODULE_KEYS],
+  mall:         ["billing", "payments", "pos", "inventory", "purchase", "hr", "accounting", "reports", "import", ...TEAM_BASICS],
+  general:      ALL_MODULE_KEYS,
 };
+
+// Shared business-type catalog (used by onboarding + the in-app switcher).
+export type BusinessType = { key: string; label: string; icon: string; desc: string };
+export const BUSINESS_TYPES: BusinessType[] = [
+  { key: "cafe",         label: "Cafe / Restaurant",     icon: "☕",  desc: "Billing, POS, inventory" },
+  { key: "shop",         label: "Retail Shop",           icon: "🛍️", desc: "POS, inventory, billing" },
+  { key: "distributor",  label: "Distributor / Wholesale", icon: "🚚", desc: "Inventory, purchase, ledgers" },
+  { key: "manufacturer", label: "Manufacturer",          icon: "🏭", desc: "Production, inventory, purchase" },
+  { key: "freelancer",   label: "Freelancer / Agency",   icon: "💻", desc: "Projects, invoicing, expenses" },
+  { key: "startup",      label: "Startup",               icon: "🚀", desc: "CRM, HR, workspace" },
+  { key: "mall",         label: "Mall / Multi-outlet",   icon: "🏪", desc: "Multi-location POS" },
+  { key: "general",      label: "General Business",      icon: "🏢", desc: "Full suite" },
+];
 
 export function presetFor(businessType: string | null | undefined): string[] {
   return BUSINESS_PRESETS[businessType ?? "general"] ?? ALL_MODULE_KEYS;

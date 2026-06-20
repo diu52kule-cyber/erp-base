@@ -1,15 +1,6 @@
 "use client";
 import { useState } from "react";
-import { MODULES } from "@/lib/modules";
-
-const BUSINESS_TYPES = [
-  { key: "cafe",       label: "Cafe / Restaurant", icon: "☕", desc: "Billing, POS, inventory" },
-  { key: "shop",       label: "Retail Shop",        icon: "🛍️", desc: "Inventory, POS, billing" },
-  { key: "freelancer", label: "Freelancer / Agency", icon: "💻", desc: "Projects, invoicing, expenses" },
-  { key: "startup",    label: "Startup",            icon: "🚀", desc: "CRM, HR, subscriptions" },
-  { key: "mall",       label: "Mall / Multi-outlet", icon: "🏪", desc: "Multi-location POS & inventory" },
-  { key: "general",    label: "General Business",   icon: "🏢", desc: "Full ERP suite" },
-];
+import { MODULES, BUSINESS_TYPES } from "@/lib/modules";
 
 const INDIAN_STATES = [
   "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat",
