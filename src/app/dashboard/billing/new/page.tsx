@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getOrgContext } from '@/lib/entitlements';
+import { bizConfig } from '@/lib/businessConfig';
 import InvoiceForm from './InvoiceForm';
 
 export default async function NewInvoicePage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('billing')) redirect('/dashboard');
+  const cfg = bizConfig(ctx.org?.business_type);
 
   return (
     <div className="space-y-4">
@@ -18,7 +20,7 @@ export default async function NewInvoicePage() {
         </Link>
         <h1 className="text-2xl font-semibold">New Invoice</h1>
       </div>
-      <InvoiceForm />
+      <InvoiceForm defaultGst={cfg.defaultGst} />
     </div>
   );
 }

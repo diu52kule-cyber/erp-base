@@ -13,12 +13,12 @@ type LineItem = {
   gst_rate: number;
 };
 
-const emptyItem = (): LineItem => ({
+const emptyItem = (gst = 18): LineItem => ({
   description: '',
   hsn_code: '',
   quantity: 1,
   unit_price: 0,
-  gst_rate: 18,
+  gst_rate: gst,
 });
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -31,7 +31,7 @@ function fmt(n: number) {
   }).format(n);
 }
 
-export default function InvoiceForm() {
+export default function InvoiceForm({ defaultGst = 18 }: { defaultGst?: number }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +46,7 @@ export default function InvoiceForm() {
     notes: '',
   });
 
-  const [items, setItems] = useState<LineItem[]>([emptyItem()]);
+  const [items, setItems] = useState<LineItem[]>([emptyItem(defaultGst)]);
 
   // Auto-save the whole invoice (header + line items) so switching tabs doesn't lose work.
   const { clearDraft, draftRestored } = useFormDraft(
@@ -229,7 +229,7 @@ export default function InvoiceForm() {
           ))}
         </div>
 
-        <button type="button" onClick={() => setItems((prev) => [...prev, emptyItem()])}
+        <button type="button" onClick={() => setItems((prev) => [...prev, emptyItem(defaultGst)])}
           className="mt-3 text-sm text-neutral-500 hover:text-neutral-900">
           + Add line item
         </button>

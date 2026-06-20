@@ -114,6 +114,18 @@ export const BUSINESS_QUICK_ACTIONS: Record<string, QuickAction[]> = {
     { label: "Add an employee", href: "/dashboard/hr/employees/new", icon: "👥" },
     { label: "Daily check-in", href: "/dashboard/checkins", icon: "☀️" },
   ],
+  distributor: [
+    { label: "New purchase order", href: "/dashboard/purchase/new", icon: "📥" },
+    { label: "Add a product", href: "/dashboard/inventory/new", icon: "📦" },
+    { label: "New invoice", href: "/dashboard/billing/new", icon: "🧾" },
+    { label: "Add a buyer", href: "/dashboard/crm/contacts/new", icon: "🤝" },
+  ],
+  manufacturer: [
+    { label: "New purchase order", href: "/dashboard/purchase/new", icon: "📥" },
+    { label: "Add a product", href: "/dashboard/inventory/new", icon: "📦" },
+    { label: "Production project", href: "/dashboard/projects/new", icon: "📊" },
+    { label: "New invoice", href: "/dashboard/billing/new", icon: "🧾" },
+  ],
   general: [
     { label: "New invoice", href: "/dashboard/billing/new", icon: "🧾" },
     { label: "New task", href: "/dashboard/tasks", icon: "✅" },

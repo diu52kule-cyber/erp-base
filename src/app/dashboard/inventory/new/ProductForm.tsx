@@ -5,7 +5,7 @@ import { GST_RATES, UNITS } from '@/lib/types/inventory';
 import type { Unit } from '@/lib/types/inventory';
 import { useFormDraft } from '@/lib/useFormDraft';
 
-export default function ProductForm() {
+export default function ProductForm({ defaultUnit = 'pcs', defaultGst = 18 }: { defaultUnit?: string; defaultGst?: number }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,9 +14,9 @@ export default function ProductForm() {
     sku: '',
     barcode: '',
     description: '',
-    unit: 'pcs' as Unit,
+    unit: defaultUnit as Unit,
     selling_price: '',
-    gst_rate: 18,
+    gst_rate: defaultGst,
     opening_stock: '',
     low_stock_threshold: '',
   });
