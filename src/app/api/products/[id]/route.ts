@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getOrgContext } from '@/lib/entitlements';
 import type { CreateProductInput } from '@/lib/types/inventory';
 
-export async function GET(_req: NextRequest) {
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await getOrgContext();
   if (!ctx?.org || !ctx.enabledModules.has('inventory')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -12,35 +12,33 @@ export async function GET(_req: NextRequest) {
   const supabase = createClient();
   const { data } = await supabase
     .from('products')
-    .select('id, name, sku, unit, selling_price, gst_rate, stock_qty, category, tax_inclusive')
+    .select('*')
+    .eq('id', params.id)
     .eq('org_id', ctx.org.id)
-    .eq('is_active', true)
-    .order('name');
+    .maybeSingle();
 
-  return NextResponse.json(data ?? []);
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json(data);
 }
 
-export async function POST(req: NextRequest) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await getOrgContext();
   if (!ctx?.org || !ctx.enabledModules.has('inventory')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const input: CreateProductInput = await req.json();
-
+  const input: Partial<CreateProductInput> = await req.json();
   if (!input.name?.trim()) {
     return NextResponse.json({ error: 'Product name is required' }, { status: 400 });
   }
 
   const supabase = createClient();
-
-  const { data: product, error: prodErr } = await supabase
+  const { error } = await supabase
     .from('products')
-    .insert({
-      org_id: ctx.org.id,
+    .update({
       name: input.name.trim(),
       sku: input.sku?.trim() || null,
-      barcode: input.barcode?.trim() || null,
+      barcode: (input as any).barcode?.trim() || null,
       description: input.description?.trim() || null,
       unit: input.unit,
       selling_price: input.selling_price,
@@ -50,30 +48,29 @@ export async function POST(req: NextRequest) {
       tax_inclusive: input.tax_inclusive ?? false,
       gst_rate: input.gst_rate,
       hsn_code: input.hsn_code?.trim() || null,
-      stock_qty: input.opening_stock ?? 0,
       low_stock_threshold: input.low_stock_threshold ?? 0,
       reorder_qty: input.reorder_qty ?? 0,
     })
-    .select('id')
-    .single();
+    .eq('id', params.id)
+    .eq('org_id', ctx.org.id);
 
-  if (prodErr || !product) {
-    return NextResponse.json(
-      { error: prodErr?.message ?? 'Failed to create product' },
-      { status: 500 }
-    );
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const ctx = await getOrgContext();
+  if (!ctx?.org || !ctx.enabledModules.has('inventory')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (input.opening_stock && input.opening_stock > 0) {
-    await supabase.from('stock_movements').insert({
-      org_id: ctx.org.id,
-      product_id: product.id,
-      type: 'in',
-      quantity: input.opening_stock,
-      notes: 'Opening stock',
-      created_by: ctx.user.id,
-    });
-  }
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('products')
+    .update({ is_active: false })
+    .eq('id', params.id)
+    .eq('org_id', ctx.org.id);
 
-  return NextResponse.json({ id: product.id, success: true });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
 }

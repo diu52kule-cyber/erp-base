@@ -16,12 +16,31 @@ export type Product = {
   description: string | null;
   unit: Unit;
   selling_price: number;
+  cost_price: number;
+  category: string | null;
+  brand: string | null;
+  tax_inclusive: boolean;
   gst_rate: number;
+  hsn_code: string | null;
   stock_qty: number;
   low_stock_threshold: number;
+  reorder_qty: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type ProductBatch = {
+  id: string;
+  org_id: string;
+  product_id: string;
+  batch_no: string;
+  expiry_date: string | null;
+  qty: number;
+  cost_price: number | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
 };
 
 export type StockMovement = {
@@ -42,7 +61,13 @@ export type CreateProductInput = {
   description?: string;
   unit: Unit;
   selling_price: number;
+  cost_price?: number;
+  category?: string;
+  brand?: string;
+  tax_inclusive?: boolean;
   gst_rate: number;
+  hsn_code?: string;
   opening_stock?: number;
   low_stock_threshold?: number;
+  reorder_qty?: number;
 };
