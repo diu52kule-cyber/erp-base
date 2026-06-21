@@ -4,7 +4,7 @@ import type { DiscountType } from '@/lib/invoice/calc';
 export const GST_RATES = [0, 5, 12, 18, 28] as const;
 export type GstRate = (typeof GST_RATES)[number];
 
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cancelled';
+export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid' | 'refunded' | 'cancelled';
 
 export type InvoiceItem = {
   id: string;

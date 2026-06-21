@@ -16,8 +16,10 @@ import PrintButton from '@/components/PrintButton';
 const STATUS_STYLES: Record<InvoiceStatus, string> = {
   draft: 'bg-neutral-100 text-neutral-600',
   sent: 'bg-blue-50 text-blue-700',
+  partial: 'bg-amber-50 text-amber-700',
   paid: 'bg-green-50 text-green-700',
-  cancelled: 'bg-red-50 text-red-600',
+  refunded: 'bg-red-50 text-red-600',
+  cancelled: 'bg-neutral-100 text-neutral-400',
 };
 
 export default async function InvoiceDetailPage({

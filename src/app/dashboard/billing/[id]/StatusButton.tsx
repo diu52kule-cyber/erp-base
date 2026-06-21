@@ -9,7 +9,12 @@ const TRANSITIONS: Record<InvoiceStatus, { label: string; next: InvoiceStatus }[
     { label: 'Mark as Paid', next: 'paid' },
     { label: 'Cancel', next: 'cancelled' },
   ],
+  partial: [
+    { label: 'Mark as Paid', next: 'paid' },
+    { label: 'Cancel', next: 'cancelled' },
+  ],
   paid: [],
+  refunded: [],
   cancelled: [],
 };
 

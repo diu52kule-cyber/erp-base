@@ -1,5 +1,6 @@
 export type PaymentMethod = 'cash' | 'upi' | 'card' | 'bank_transfer' | 'cheque' | 'razorpay' | 'credit';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+export type PaymentType = 'invoice' | 'advance' | 'refund';
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: 'Cash',
@@ -11,10 +12,18 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   credit: 'Credit / Udhaar',
 };
 
+export type PaymentAllocation = {
+  invoiceId: string;
+  amount: number;
+};
+
 export type Payment = {
   id: string;
   org_id: string;
   invoice_id: string | null;
+  contact_id: string | null;
+  payment_type: PaymentType;
+  refund_of_payment_id: string | null;
   amount: number;
   currency: string;
   method: PaymentMethod;
@@ -29,7 +38,11 @@ export type Payment = {
 };
 
 export type RecordPaymentInput = {
+  paymentType?: PaymentType;
   invoiceId?: string;
+  contactId?: string;
+  allocations?: PaymentAllocation[];
+  refundOfPaymentId?: string;
   amount: number;
   method: PaymentMethod;
   referenceNumber?: string;
