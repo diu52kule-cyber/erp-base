@@ -9,10 +9,26 @@ import {
   DEAL_STAGE_COLORS,
 } from '@/lib/types/crm';
 import type { Contact, Deal } from '@/lib/types/crm';
+import ActivityTimeline from './ActivityTimeline';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 }
+
+type ContactExtended = Contact & {
+  tags?: string[];
+  lead_source?: string | null;
+  opening_balance?: number;
+};
+
+type Activity = {
+  id: string;
+  type: string;
+  body: string;
+  due_date: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const ctx = await getOrgContext();
@@ -26,31 +42,78 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
     supabase.from('deals').select('*').eq('contact_id', id).eq('org_id', ctx.org.id).order('created_at', { ascending: false }),
   ]);
 
+  let activityList: Activity[] = [];
+  try {
+    const { data: acts } = await supabase
+      .from('contact_activities')
+      .select('*')
+      .eq('contact_id', id)
+      .eq('org_id', ctx.org.id)
+      .order('created_at', { ascending: false });
+    activityList = (acts ?? []) as Activity[];
+  } catch { /* table not yet migrated */ }
+
   if (!contact) notFound();
 
-  const c = contact as Contact;
+  const c = contact as ContactExtended;
   const dealList = (deals ?? []) as Deal[];
   const openValue = dealList.filter((d) => !['won', 'lost'].includes(d.stage)).reduce((s, d) => s + Number(d.value), 0);
+
+  const waPhone = c.phone?.replace(/\D/g, '');
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <Link href="/dashboard/crm" className="text-sm text-neutral-500 hover:text-neutral-900">← CRM</Link>
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-semibold">{c.name}</h1>
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${CONTACT_TYPE_COLORS[c.type]}`}>
               {CONTACT_TYPE_LABELS[c.type]}
             </span>
+            {c.lead_source && (
+              <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+                via {c.lead_source.replace(/_/g, ' ')}
+              </span>
+            )}
           </div>
           {c.company && <p className="mt-1 text-neutral-500">{c.company}</p>}
+          {c.tags && c.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {c.tags.map((tag) => (
+                <span key={tag} className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs text-neutral-600">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        <Link
-          href={`/dashboard/crm/deals/new?contact=${id}`}
-          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
-        >
-          + New Deal
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {c.email && (
+            <a
+              href={`mailto:${c.email}`}
+              className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50 flex items-center gap-1.5"
+            >
+              ✉️ Email
+            </a>
+          )}
+          {c.phone && (
+            <a
+              href={`https://wa.me/${waPhone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 hover:bg-green-100 flex items-center gap-1.5"
+            >
+              💬 WhatsApp
+            </a>
+          )}
+          <Link
+            href={`/dashboard/crm/deals/new?contact=${id}`}
+            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+          >
+            + New Deal
+          </Link>
+        </div>
       </div>
 
       {/* Contact info */}
@@ -73,6 +136,12 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           {!c.email && !c.phone && !c.gstin && !c.address && (
             <p className="text-sm text-neutral-400">No contact details added</p>
           )}
+          {c.notes && (
+            <div className="border-t border-neutral-100 pt-3">
+              <p className="text-xs text-neutral-400">Notes</p>
+              <p className="mt-1 text-sm text-neutral-700 whitespace-pre-line">{c.notes}</p>
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl border border-neutral-200 bg-white p-5 space-y-3">
@@ -87,10 +156,10 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               <p className="text-xl font-semibold">{fmt(openValue)}</p>
             </div>
           </div>
-          {c.notes && (
+          {(c.opening_balance ?? 0) > 0 && (
             <div className="border-t border-neutral-100 pt-3">
-              <p className="text-xs text-neutral-400">Notes</p>
-              <p className="mt-1 text-sm text-neutral-700 whitespace-pre-line">{c.notes}</p>
+              <p className="text-xs text-neutral-400">Opening Balance</p>
+              <p className="text-sm font-semibold text-amber-600">{fmt(c.opening_balance ?? 0)}</p>
             </div>
           )}
         </div>
@@ -141,6 +210,12 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
             </table>
           </div>
         )}
+      </div>
+
+      {/* Activity Timeline */}
+      <div>
+        <h2 className="mb-3 font-medium">Activity Timeline</h2>
+        <ActivityTimeline contactId={id} initial={activityList} />
       </div>
     </div>
   );

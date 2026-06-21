@@ -36,10 +36,16 @@ export default async function PurchasePage() {
           <h1 className="text-2xl font-semibold">Purchase Orders</h1>
           <p className="mt-1 text-sm text-neutral-500">Manage vendor orders, receiving, and bills</p>
         </div>
-        <Link href="/dashboard/purchase/new"
-          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">
-          + New PO
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/purchase/advances"
+            className="rounded-lg border border-neutral-200 px-4 py-2 text-sm hover:bg-neutral-50">
+            Vendor Advances
+          </Link>
+          <Link href="/dashboard/purchase/new"
+            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">
+            + New PO
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

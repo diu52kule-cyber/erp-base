@@ -8,6 +8,8 @@ import ReceiveForm from './ReceiveForm';
 import BillButton from './BillButton';
 import StatusButton from './StatusButton';
 import AttachmentPanel from '@/components/AttachmentPanel';
+import ReturnForm from './ReturnForm';
+import LandedCostForm from './LandedCostForm';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n ?? 0);
@@ -25,13 +27,27 @@ export default async function PODetailPage({ params }: { params: { id: string } 
     supabase.from('vendor_bills').select('*').eq('po_id', params.id),
   ]);
 
+  let returns: any[] | null = null;
+  let landedCosts: any[] | null = null;
+  try {
+    const [rRes, lcRes] = await Promise.all([
+      supabase.from('purchase_returns').select('*, lines:purchase_return_lines(*)').eq('po_id', params.id).order('created_at', { ascending: false }),
+      supabase.from('landed_costs').select('*').eq('po_id', params.id).order('created_at'),
+    ]);
+    returns = rRes.data;
+    landedCosts = lcRes.data;
+  } catch { /* tables not yet migrated */ }
+
   if (!po) notFound();
   const poData   = po as PurchaseOrder;
   const lineList = (lines ?? []) as (POLine & { product?: { name: string; sku?: string; unit?: string } | null })[];
   const billList = (bills ?? []) as VendorBill[];
 
-  const canReceive = ['sent', 'partial'].includes(poData.status);
-  const canBill    = ['received', 'partial'].includes(poData.status) && billList.length === 0;
+  const canReceive  = ['sent', 'partial'].includes(poData.status);
+  const canBill     = ['received', 'partial'].includes(poData.status) && billList.length === 0;
+  const canReturn   = ['received', 'billed'].includes(poData.status);
+  const returnList  = (returns ?? []) as any[];
+  const lcList      = (landedCosts ?? []) as any[];
 
   return (
     <div className="space-y-6">
@@ -167,6 +183,69 @@ export default async function PODetailPage({ params }: { params: { id: string } 
 
       {/* Bill creation */}
       {canBill && <BillButton poId={poData.id} />}
+
+      {/* Landed costs */}
+      {lcList.length > 0 && (
+        <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
+          <div className="border-b border-neutral-100 bg-neutral-50 px-4 py-3 flex items-center justify-between">
+            <h2 className="text-sm font-medium">Landed Costs</h2>
+            <span className="text-sm font-semibold">
+              {fmt(lcList.reduce((s: number, l: any) => s + Number(l.amount), 0))}
+            </span>
+          </div>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-neutral-100 text-xs text-neutral-500">
+              <th className="px-4 py-2 text-left font-medium">Type</th>
+              <th className="px-4 py-2 text-left font-medium">Notes</th>
+              <th className="px-4 py-2 text-right font-medium">Amount</th>
+            </tr></thead>
+            <tbody className="divide-y divide-neutral-100">
+              {lcList.map((lc: any) => (
+                <tr key={lc.id}>
+                  <td className="px-4 py-2 capitalize">{lc.cost_type}</td>
+                  <td className="px-4 py-2 text-neutral-400">{lc.notes ?? '—'}</td>
+                  <td className="px-4 py-2 text-right font-medium">{fmt(lc.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Add landed cost */}
+      <LandedCostForm poId={poData.id} />
+
+      {/* Purchase returns */}
+      {returnList.length > 0 && (
+        <div className="rounded-xl border border-red-100 bg-white overflow-hidden">
+          <div className="border-b border-red-100 bg-red-50 px-4 py-3">
+            <h2 className="text-sm font-medium text-red-700">Debit Notes / Returns</h2>
+          </div>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-neutral-100 text-xs text-neutral-500">
+              <th className="px-4 py-2 text-left font-medium">Return No</th>
+              <th className="px-4 py-2 text-left font-medium">Date</th>
+              <th className="px-4 py-2 text-left font-medium">Reason</th>
+              <th className="px-4 py-2 text-right font-medium">Total</th>
+            </tr></thead>
+            <tbody className="divide-y divide-neutral-100">
+              {returnList.map((r: any) => (
+                <tr key={r.id}>
+                  <td className="px-4 py-2 font-mono font-medium text-red-700">{r.return_number}</td>
+                  <td className="px-4 py-2 text-neutral-500">{r.return_date}</td>
+                  <td className="px-4 py-2 text-neutral-400">{r.reason ?? '—'}</td>
+                  <td className="px-4 py-2 text-right font-semibold text-red-600">{fmt(r.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Return goods form */}
+      {canReturn && (
+        <ReturnForm poId={poData.id} vendorName={poData.vendor_name} lines={lineList} />
+      )}
 
       {poData.notes && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 text-sm">

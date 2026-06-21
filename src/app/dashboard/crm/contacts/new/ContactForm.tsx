@@ -4,18 +4,27 @@ import { useState } from 'react';
 import { CONTACT_TYPES, CONTACT_TYPE_LABELS } from '@/lib/types/crm';
 import { useFormDraft } from '@/lib/useFormDraft';
 
+const LEAD_SOURCES = [
+  'website', 'referral', 'social_media', 'cold_call', 'email_campaign',
+  'trade_show', 'walk_in', 'whatsapp', 'other',
+] as const;
+
 export default function ContactForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState<{ id: string; name: string } | null>(null);
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
-    type: 'lead' as const,
+    type: 'lead' as string,
     company: '',
     gstin: '',
     address: '',
     notes: '',
+    tags: '',
+    lead_source: '',
+    opening_balance: '',
   });
   const { clearDraft, draftRestored } = useFormDraft('contact-new', form, setForm);
 
@@ -26,16 +35,24 @@ export default function ContactForm() {
   async function handleSubmit() {
     if (!form.name.trim()) { setError('Name is required'); return; }
     setError(null);
+    setDuplicate(null);
     setPending(true);
     try {
       const res = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          opening_balance: form.opening_balance ? Number(form.opening_balance) : 0,
+        }),
       });
       const data = await res.json();
       if (data.error) { setError(data.error); setPending(false); }
-      else { clearDraft(); window.location.href = `/dashboard/crm/contacts/${data.id}`; }
+      else {
+        if (data.duplicate) setDuplicate(data.duplicate);
+        clearDraft();
+        window.location.href = `/dashboard/crm/contacts/${data.id}`;
+      }
     } catch {
       setError('Failed to save contact');
       setPending(false);
@@ -46,6 +63,13 @@ export default function ContactForm() {
     <div className="space-y-6">
       {error && (
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+      )}
+      {duplicate && (
+        <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          Possible duplicate:{' '}
+          <a href={`/dashboard/crm/contacts/${duplicate.id}`} className="font-semibold underline">{duplicate.name}</a>
+          {' '}already exists with this email / phone.
+        </div>
       )}
       {draftRestored && (
         <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
@@ -77,6 +101,20 @@ export default function ContactForm() {
             >
               {CONTACT_TYPES.map((t) => (
                 <option key={t} value={t}>{CONTACT_TYPE_LABELS[t]}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-neutral-600">Lead Source</label>
+            <select
+              value={form.lead_source}
+              onChange={(e) => set('lead_source', e.target.value)}
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            >
+              <option value="">— None —</option>
+              {LEAD_SOURCES.map((s) => (
+                <option key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
               ))}
             </select>
           </div>
@@ -126,6 +164,22 @@ export default function ContactForm() {
             />
           </div>
 
+          {form.type === 'customer' && (
+            <div>
+              <label className="mb-1 block text-sm text-neutral-600">Opening Balance (₹)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.opening_balance}
+                onChange={(e) => set('opening_balance', e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              />
+              <p className="mt-1 text-xs text-neutral-400">Amount this customer already owes you (creates a ledger entry)</p>
+            </div>
+          )}
+
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm text-neutral-600">Address</label>
             <input
@@ -133,6 +187,17 @@ export default function ContactForm() {
               value={form.address}
               onChange={(e) => set('address', e.target.value)}
               placeholder="Street, City, State, PIN"
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm text-neutral-600">Tags</label>
+            <input
+              type="text"
+              value={form.tags}
+              onChange={(e) => set('tags', e.target.value)}
+              placeholder="vip, bulk-buyer, delhi (comma-separated)"
               className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
             />
           </div>
