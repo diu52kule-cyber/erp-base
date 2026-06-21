@@ -140,6 +140,7 @@ create policy ri_upd on recurring_invoices for update using (is_org_member(org_i
 drop policy if exists ri_del on recurring_invoices;
 create policy ri_del on recurring_invoices for delete using (is_org_member(org_id));
 
+drop trigger if exists recurring_invoices_updated_at on recurring_invoices;
 create trigger recurring_invoices_updated_at
   before update on recurring_invoices
   for each row execute function update_updated_at();
