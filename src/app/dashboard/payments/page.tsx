@@ -16,9 +16,11 @@ function fmt(n: number) {
 const METHOD_STYLES: Record<string, string> = {
   cash: 'bg-green-50 text-green-700',
   upi: 'bg-purple-50 text-purple-700',
+  card: 'bg-sky-50 text-sky-700',
   bank_transfer: 'bg-blue-50 text-blue-700',
   cheque: 'bg-yellow-50 text-yellow-700',
   razorpay: 'bg-indigo-50 text-indigo-700',
+  credit: 'bg-amber-50 text-amber-700',
 };
 
 export default async function PaymentsPage() {

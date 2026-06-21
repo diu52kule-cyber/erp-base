@@ -31,7 +31,7 @@ function fmt(n: number) {
   }).format(n);
 }
 
-const MANUAL_METHODS: PaymentMethod[] = ['cash', 'upi', 'bank_transfer', 'cheque'];
+const MANUAL_METHODS: PaymentMethod[] = ['cash', 'upi', 'card', 'bank_transfer', 'cheque', 'credit'];
 
 export default function PaymentForm({
   invoices,
@@ -117,6 +117,10 @@ export default function PaymentForm({
 
   async function handleManualSubmit() {
     const parsedAmount = parseFloat(amount);
+    if (method === 'credit' && !selectedInvoiceId) {
+      setError('Select the invoice to put on credit (udhaar)');
+      return;
+    }
     if (!parsedAmount || parsedAmount <= 0) {
       setError('Enter a valid amount');
       return;
@@ -244,6 +248,11 @@ export default function PaymentForm({
               </button>
             ))}
           </div>
+          {method === 'credit' && (
+            <p className="mt-2 text-xs text-amber-600">
+              No money received now — the invoice stays outstanding and the amount is added to the customer&apos;s account (udhaar) in their ledger.
+            </p>
+          )}
         </div>
 
         {/* Reference */}
@@ -291,7 +300,7 @@ export default function PaymentForm({
           disabled={pending || razorpayLoading}
           className="rounded-md bg-neutral-900 px-6 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50"
         >
-          {pending ? 'Saving…' : 'Save Payment'}
+          {pending ? 'Saving…' : method === 'credit' ? 'Save as Credit (Udhaar)' : 'Save Payment'}
         </button>
       </div>
     </div>

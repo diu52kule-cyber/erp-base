@@ -13,6 +13,53 @@ export async function POST(req: NextRequest) {
 
   const supabase = createClient();
 
+  // Credit / Udhaar: this is NOT a received payment. Keep the invoice outstanding
+  // and make sure the customer's ledger carries the receivable.
+  if (input.method === 'credit') {
+    if (!input.invoiceId) {
+      return NextResponse.json(
+        { error: 'Select the invoice to put on credit' },
+        { status: 400 }
+      );
+    }
+    const { data: inv } = await supabase
+      .from('invoices')
+      .update({ status: 'sent' })
+      .eq('id', input.invoiceId)
+      .eq('org_id', ctx.org.id)
+      .neq('status', 'paid')
+      .select('customer_id, invoice_number, total')
+      .maybeSingle();
+
+    if (inv?.customer_id && ctx.enabledModules.has('ledger')) {
+      // Don't double-post if the invoice already created a receivable on creation.
+      const { data: existing } = await supabase
+        .from('ledger_entries')
+        .select('id')
+        .eq('org_id', ctx.org.id)
+        .eq('reference_type', 'invoice')
+        .eq('reference_id', input.invoiceId)
+        .maybeSingle();
+      if (!existing) {
+        try {
+          await supabase.from('ledger_entries').insert({
+            org_id: ctx.org.id,
+            contact_id: inv.customer_id,
+            type: 'credit',
+            amount: Number(inv.total) || Math.abs(Number(input.amount) || 0),
+            note: `Credit / Udhaar for ${inv.invoice_number ?? 'invoice'}`,
+            reference_type: 'invoice',
+            reference_id: input.invoiceId,
+            entry_date: input.paidAt,
+            created_by: ctx.user.id,
+          });
+        } catch { /* ledger optional */ }
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
   const { error: payErr } = await supabase.from('payments').insert({
     org_id: ctx.org.id,
     invoice_id: input.invoiceId || null,

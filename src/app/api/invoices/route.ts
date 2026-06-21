@@ -137,5 +137,46 @@ export async function POST(req: NextRequest) {
     } catch { /* ledger optional — never block invoice creation */ }
   }
 
+  // Optionally record a payment captured at invoice creation ("record payment
+  // while invoicing"). 'credit' means unpaid, so nothing is recorded here.
+  const pay = (input as { payment?: { method?: string; amount?: number; reference?: string } | null }).payment;
+  if (pay && pay.method && pay.method !== 'credit') {
+    const payAmt = Number(pay.amount) || 0;
+    if (payAmt > 0) {
+      try {
+        await supabase.from('payments').insert({
+          org_id: ctx.org.id,
+          invoice_id: invoice.id,
+          amount: payAmt,
+          method: pay.method,
+          status: 'completed',
+          reference_number: pay.reference?.trim() || null,
+          paid_at: input.issue_date,
+          created_by: ctx.user.id,
+        });
+        const fullyPaid = payAmt >= total - 0.01;
+        await supabase
+          .from('invoices')
+          .update({ status: fullyPaid ? 'paid' : 'sent' })
+          .eq('id', invoice.id)
+          .eq('org_id', ctx.org.id);
+        // Reduce the customer's receivable in the ledger.
+        if (customerId && ctx.enabledModules.has('ledger')) {
+          await supabase.from('ledger_entries').insert({
+            org_id: ctx.org.id,
+            contact_id: customerId,
+            type: 'payment',
+            amount: -Math.abs(payAmt),
+            note: `Payment on ${invoiceNumber}`,
+            reference_type: 'payment',
+            reference_id: invoice.id,
+            entry_date: input.issue_date,
+            created_by: ctx.user.id,
+          });
+        }
+      } catch { /* payment optional — never block invoice creation */ }
+    }
+  }
+
   return NextResponse.json({ id: invoice.id });
 }

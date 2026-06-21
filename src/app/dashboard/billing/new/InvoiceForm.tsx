@@ -38,6 +38,12 @@ export default function InvoiceForm({ defaultGst = 18, products = [], contacts =
   const [error, setError] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
 
+  // Optional payment captured at invoice creation ("record payment while invoicing").
+  // 'credit' = unpaid / on the customer's account (udhaar); anything else records a receipt.
+  const [payMethod, setPayMethod] = useState<'credit' | 'cash' | 'upi' | 'card' | 'bank_transfer'>('credit');
+  const [payAmount, setPayAmount] = useState('');
+  const [payRef, setPayRef] = useState('');
+
   const [form, setForm] = useState({
     customer_name: '',
     customer_email: '',
@@ -91,6 +97,9 @@ export default function InvoiceForm({ defaultGst = 18, products = [], contacts =
           items: items.map(({ description, hsn_code, quantity, unit_price, gst_rate }) => ({
             description, hsn_code: hsn_code.trim() || null, quantity, unit_price, gst_rate,
           })),
+          payment: payMethod === 'credit'
+            ? null
+            : { method: payMethod, amount: parseFloat(payAmount) || total, reference: payRef.trim() || undefined },
         }),
       });
       const data = await res.json();
@@ -259,11 +268,70 @@ export default function InvoiceForm({ defaultGst = 18, products = [], contacts =
         </div>
       </div>
 
+      {/* Payment */}
+      <div className="rounded-xl border border-neutral-200 bg-white p-6">
+        <h2 className="font-medium">Payment</h2>
+        <p className="mb-4 mt-1 text-sm text-neutral-500">How is the customer paying for this invoice?</p>
+        <div className="flex flex-wrap gap-2">
+          {([
+            ['credit', 'On Credit (Udhaar)'],
+            ['cash', 'Cash'],
+            ['upi', 'UPI'],
+            ['card', 'Card'],
+            ['bank_transfer', 'Bank Transfer'],
+          ] as const).map(([m, label]) => (
+            <button key={m} type="button"
+              onClick={() => { setPayMethod(m); if (m !== 'credit') setPayAmount(total.toFixed(2)); }}
+              className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
+                payMethod === m ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 hover:bg-neutral-50'
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {payMethod === 'credit' ? (
+          <p className="mt-3 text-xs text-amber-600">
+            Invoice will stay outstanding.{' '}
+            {customerId
+              ? "The full amount is added to the customer's account (udhaar) in their ledger."
+              : 'Link a saved customer above to track this in their ledger.'}
+          </p>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm text-neutral-600">Amount received (₹)</label>
+              <div className="flex gap-2">
+                <input type="number" value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)} min="0" step="0.01"
+                  placeholder={total.toFixed(2)}
+                  className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+                <button type="button" onClick={() => setPayAmount(total.toFixed(2))}
+                  className="whitespace-nowrap rounded-lg border border-neutral-200 px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50">
+                  Full
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-neutral-400">
+                {(parseFloat(payAmount) || 0) >= total - 0.01
+                  ? 'Marks the invoice as paid.'
+                  : `Partial — ${fmt(Math.max(0, total - (parseFloat(payAmount) || 0)))} will stay outstanding.`}
+              </p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-neutral-600">Reference / UTR / Txn No.</label>
+              <input type="text" value={payRef} onChange={(e) => setPayRef(e.target.value)}
+                placeholder="optional"
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Actions */}
       <div className="flex justify-end">
         <button type="button" onClick={handleSubmit} disabled={pending}
           className="rounded-md bg-neutral-900 px-6 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50">
-          {pending ? 'Saving…' : 'Save Invoice'}
+          {pending ? 'Saving…' : payMethod === 'credit' ? 'Save Invoice' : 'Save & Record Payment'}
         </button>
       </div>
     </div>

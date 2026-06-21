@@ -1,12 +1,14 @@
-export type PaymentMethod = 'cash' | 'upi' | 'bank_transfer' | 'cheque' | 'razorpay';
+export type PaymentMethod = 'cash' | 'upi' | 'card' | 'bank_transfer' | 'cheque' | 'razorpay' | 'credit';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: 'Cash',
   upi: 'UPI',
+  card: 'Card',
   bank_transfer: 'Bank Transfer',
   cheque: 'Cheque',
   razorpay: 'Online (Razorpay)',
+  credit: 'Credit / Udhaar',
 };
 
 export type Payment = {
