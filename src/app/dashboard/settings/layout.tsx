@@ -8,6 +8,7 @@ const SETTINGS_NAV: NavItem[] = [
   { href: '/dashboard/settings/preferences', label: 'Preferences', roles: 'all' },
   { href: '/dashboard/settings/business',    label: 'Business type', roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/team',        label: 'Team Members', roles: ['owner', 'admin', 'manager'] },
+  { href: '/dashboard/settings/invoice',     label: 'Invoice settings', roles: ['owner', 'admin', 'manager', 'accountant'] },
   { href: '/dashboard/settings/currencies',  label: 'Currencies',   roles: ['owner', 'admin', 'manager', 'accountant'] },
   { href: '/dashboard/settings/api',         label: 'API Keys',     roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/webhooks',    label: 'Webhooks',     roles: ['owner', 'admin'] },

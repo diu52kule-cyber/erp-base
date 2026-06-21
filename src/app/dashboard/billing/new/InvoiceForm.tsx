@@ -6,6 +6,10 @@ import { INDIAN_STATES } from '@/lib/types/accounting';
 import { useFormDraft } from '@/lib/useFormDraft';
 import ProductPicker, { type PickProduct } from '@/components/ProductPicker';
 import ContactPicker, { type PickContact } from '@/components/ContactPicker';
+import { computeInvoiceTotals } from '@/lib/invoice/calc';
+import { amountInWords } from '@/lib/invoice/words';
+import { fmtMoney, CURRENCY_SYMBOLS } from '@/lib/invoice/format';
+import { DOC_TYPES, PAYMENT_TERMS, addDays, type DocType } from '@/lib/invoice/docTypes';
 
 type LineItem = {
   description: string;
@@ -13,119 +17,228 @@ type LineItem = {
   quantity: number;
   unit_price: number;
   gst_rate: number;
+  discount_pct: number;
 };
 
-const emptyItem = (gst = 18): LineItem => ({
-  description: '',
-  hsn_code: '',
-  quantity: 1,
-  unit_price: 0,
-  gst_rate: gst,
-});
+export type InvoiceFormInitial = {
+  customer_id?: string | null;
+  customer_name?: string;
+  customer_email?: string;
+  customer_gstin?: string;
+  billing_address?: string;
+  place_of_supply?: string;
+  issue_date?: string;
+  due_date?: string;
+  reference_no?: string;
+  notes?: string;
+  terms?: string;
+  currency?: string;
+  discount_type?: 'percent' | 'amount' | null;
+  discount_value?: number;
+  round_off_enabled?: boolean;
+  items?: {
+    description: string;
+    hsn_code?: string | null;
+    quantity: number;
+    unit_price: number;
+    gst_rate: number;
+    discount_type?: 'percent' | 'amount' | null;
+    discount_value?: number;
+  }[];
+};
+
+type Props = {
+  mode?: 'create' | 'edit' | 'credit_note';
+  docType?: DocType;
+  invoiceId?: string;
+  sourceId?: string;
+  initial?: InvoiceFormInitial;
+  defaultGst?: number;
+  defaultDueDays?: number;
+  defaultTerms?: string;
+  defaultNotes?: string;
+  roundOffDefault?: boolean;
+  products?: PickProduct[];
+  contacts?: PickContact[];
+};
 
 const today = () => new Date().toISOString().split('T')[0];
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 2,
-  }).format(n);
+const emptyItem = (gst = 18): LineItem => ({
+  description: '', hsn_code: '', quantity: 1, unit_price: 0, gst_rate: gst, discount_pct: 0,
+});
+
+function initialItems(initial: InvoiceFormInitial | undefined, gst: number): LineItem[] {
+  if (!initial?.items?.length) return [emptyItem(gst)];
+  return initial.items.map((it) => ({
+    description: it.description ?? '',
+    hsn_code: it.hsn_code ?? '',
+    quantity: it.quantity ?? 1,
+    unit_price: it.unit_price ?? 0,
+    gst_rate: it.gst_rate ?? gst,
+    discount_pct: it.discount_type === 'percent' ? (it.discount_value ?? 0) : 0,
+  }));
 }
 
-export default function InvoiceForm({ defaultGst = 18, products = [], contacts = [] }: { defaultGst?: number; products?: PickProduct[]; contacts?: PickContact[] }) {
+const CURRENCIES = Object.keys(CURRENCY_SYMBOLS);
+
+export default function InvoiceForm({
+  mode = 'create', docType = 'invoice', invoiceId, sourceId, initial,
+  defaultGst = 18, defaultDueDays = 0, defaultTerms = '', defaultNotes = '',
+  roundOffDefault = true, products = [], contacts = [],
+}: Props) {
+  const effectiveDocType: DocType = mode === 'credit_note' ? 'credit_note' : docType;
+  const cfg = DOC_TYPES[effectiveDocType];
+  const isInvoice = effectiveDocType === 'invoice';
+
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(initial?.customer_id ?? null);
 
-  // Optional payment captured at invoice creation ("record payment while invoicing").
-  // 'credit' = unpaid / on the customer's account (udhaar); anything else records a receipt.
+  const [form, setForm] = useState({
+    customer_name: initial?.customer_name ?? '',
+    customer_email: initial?.customer_email ?? '',
+    customer_gstin: initial?.customer_gstin ?? '',
+    billing_address: initial?.billing_address ?? '',
+    place_of_supply: initial?.place_of_supply ?? '',
+    issue_date: initial?.issue_date ?? today(),
+    due_date: initial?.due_date ?? (defaultDueDays ? addDays(today(), defaultDueDays) : ''),
+    reference_no: initial?.reference_no ?? '',
+    notes: initial?.notes ?? defaultNotes,
+    terms: initial?.terms ?? defaultTerms,
+    currency: initial?.currency ?? 'INR',
+  });
+
+  const [items, setItems] = useState<LineItem[]>(initialItems(initial, defaultGst));
+  const [billDiscType, setBillDiscType] = useState<'' | 'percent' | 'amount'>(initial?.discount_type ?? '');
+  const [billDiscValue, setBillDiscValue] = useState<number>(initial?.discount_value ?? 0);
+  const [roundOff, setRoundOff] = useState<boolean>(initial?.round_off_enabled ?? roundOffDefault);
+
+  // Payment captured at creation (real invoices only).
   const [payMethod, setPayMethod] = useState<'credit' | 'cash' | 'upi' | 'card' | 'bank_transfer'>('credit');
   const [payAmount, setPayAmount] = useState('');
   const [payRef, setPayRef] = useState('');
 
-  const [form, setForm] = useState({
-    customer_name: '',
-    customer_email: '',
-    customer_gstin: '',
-    billing_address: '',
-    place_of_supply: '',
-    issue_date: today(),
-    due_date: '',
-    notes: '',
-  });
-
-  const [items, setItems] = useState<LineItem[]>([emptyItem(defaultGst)]);
-
-  // Auto-save the whole invoice (header + line items) so switching tabs doesn't lose work.
+  const draftKey =
+    mode === 'edit' ? `invoice-edit-${invoiceId}` :
+    mode === 'credit_note' ? `invoice-cn-${sourceId}` :
+    `invoice-new-${docType}`;
   const { clearDraft, draftRestored } = useFormDraft(
-    'invoice-new',
-    { form, items },
-    (v: { form: typeof form; items: LineItem[] }) => { if (v.form) setForm(v.form); if (v.items) setItems(v.items); },
+    draftKey,
+    { form, items, billDiscType, billDiscValue, roundOff, customerId },
+    (v: { form: typeof form; items: LineItem[]; billDiscType: '' | 'percent' | 'amount'; billDiscValue: number; roundOff: boolean; customerId: string | null }) => {
+      if (v.form) setForm(v.form);
+      if (v.items) setItems(v.items);
+      if (v.billDiscType !== undefined) setBillDiscType(v.billDiscType);
+      if (typeof v.billDiscValue === 'number') setBillDiscValue(v.billDiscValue);
+      if (typeof v.roundOff === 'boolean') setRoundOff(v.roundOff);
+      if (v.customerId !== undefined) setCustomerId(v.customerId);
+    },
   );
 
-  const calculated = items.map((item) => {
-    const amount = Math.round(item.quantity * item.unit_price * 100) / 100;
-    const gst_amount = Math.round(amount * item.gst_rate) / 100;
-    return { ...item, amount, gst_amount };
-  });
+  const currency = form.currency;
+  const money = (n: number) => fmtMoney(n, currency);
 
-  const subtotal = calculated.reduce((s, i) => s + i.amount, 0);
-  const gstTotal = calculated.reduce((s, i) => s + i.gst_amount, 0);
-  const total = subtotal + gstTotal;
+  const totals = computeInvoiceTotals(
+    items.map((i) => ({
+      quantity: i.quantity, unit_price: i.unit_price, gst_rate: i.gst_rate,
+      discount_type: i.discount_pct > 0 ? 'percent' : undefined, discount_value: i.discount_pct,
+    })),
+    { discountType: billDiscType || undefined, discountValue: billDiscValue, roundOffEnabled: roundOff },
+  );
 
   function updateItem(index: number, field: keyof LineItem, value: string | number) {
-    setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    );
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
   }
 
-  async function handleSubmit() {
+  function applyTerm(days: number) {
+    setForm((f) => ({ ...f, due_date: addDays(f.issue_date || today(), days) }));
+  }
+
+  function resetForm() {
+    setForm({
+      customer_name: '', customer_email: '', customer_gstin: '', billing_address: '',
+      place_of_supply: '', issue_date: today(), due_date: defaultDueDays ? addDays(today(), defaultDueDays) : '',
+      reference_no: '', notes: defaultNotes, terms: defaultTerms, currency: 'INR',
+    });
+    setItems([emptyItem(defaultGst)]);
+    setBillDiscType(''); setBillDiscValue(0); setRoundOff(roundOffDefault);
+    setCustomerId(null); setPayMethod('credit'); setPayAmount(''); setPayRef('');
+  }
+
+  async function handleSubmit(action: 'save' | 'new' | 'print') {
     if (!form.customer_name.trim()) { setError('Customer name is required'); return; }
     if (!items.length || items.some((i) => !i.description.trim())) {
       setError('All line items must have a description'); return;
     }
     setError(null);
     setPending(true);
+
+    const payload = {
+      doc_type: effectiveDocType,
+      customer_id: customerId,
+      customer_name: form.customer_name,
+      customer_email: form.customer_email,
+      customer_gstin: form.customer_gstin,
+      billing_address: form.billing_address,
+      place_of_supply: form.place_of_supply,
+      issue_date: form.issue_date,
+      due_date: form.due_date || undefined,
+      reference_no: form.reference_no,
+      notes: form.notes,
+      terms: form.terms,
+      currency: form.currency,
+      discount_type: billDiscType || null,
+      discount_value: billDiscValue,
+      round_off_enabled: roundOff,
+      items: items.map((i) => ({
+        description: i.description,
+        hsn_code: i.hsn_code.trim() || null,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        gst_rate: i.gst_rate,
+        discount_type: i.discount_pct > 0 ? 'percent' : null,
+        discount_value: i.discount_pct,
+      })),
+      payment: isInvoice && mode === 'create' && payMethod !== 'credit'
+        ? { method: payMethod, amount: parseFloat(payAmount) || totals.total, reference: payRef.trim() || undefined }
+        : null,
+    };
+
+    const url =
+      mode === 'edit' ? `/api/invoices/${invoiceId}` :
+      mode === 'credit_note' ? `/api/invoices/${sourceId}/credit-note` :
+      '/api/invoices';
+    const method = mode === 'edit' ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          customer_id: customerId,
-          items: items.map(({ description, hsn_code, quantity, unit_price, gst_rate }) => ({
-            description, hsn_code: hsn_code.trim() || null, quantity, unit_price, gst_rate,
-          })),
-          payment: payMethod === 'credit'
-            ? null
-            : { method: payMethod, amount: parseFloat(payAmount) || total, reference: payRef.trim() || undefined },
-        }),
-      });
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (data.error) { setError(data.error); setPending(false); }
-      else { clearDraft(); window.location.href = `/dashboard/billing/${data.id}`; }
-    } catch (e: any) {
-      setError(e?.message ?? 'Failed to save invoice');
-      setPending(false);
+      if (data.error) { setError(data.error); setPending(false); return; }
+      clearDraft();
+      if (action === 'new') { resetForm(); setPending(false); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      const id = data.id ?? invoiceId;
+      window.location.href = action === 'print' ? `/dashboard/billing/${id}?print=1` : `/dashboard/billing/${id}`;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save'); setPending(false);
     }
   }
 
+  const inputCls = 'w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900';
+
   return (
     <div className="space-y-6">
-      {error && (
-        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-      )}
+      {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
       {draftRestored && (
         <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
-          <span>Restored your unsaved invoice draft.</span>
+          <span>Restored your unsaved {cfg.short.toLowerCase()} draft.</span>
           <button type="button" onClick={() => { clearDraft(); window.location.reload(); }} className="font-medium underline-offset-2 hover:underline">Discard</button>
         </div>
       )}
 
       {/* Customer details */}
       <div className="rounded-xl border border-neutral-200 bg-white p-6">
-        <h2 className="mb-4 font-medium">Customer Details</h2>
+        <h2 className="mb-4 font-medium">{effectiveDocType === 'credit_note' ? 'Customer (return to)' : 'Customer Details'}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm text-neutral-600">Customer Name *</label>
@@ -133,67 +246,74 @@ export default function InvoiceForm({ defaultGst = 18, products = [], contacts =
               value={form.customer_name}
               contacts={contacts}
               onChange={(v) => { setForm((f) => ({ ...f, customer_name: v })); setCustomerId(null); }}
-              onPick={(c) => { setCustomerId(c.id); setForm((f) => ({ ...f, customer_name: c.name, customer_email: c.email ?? f.customer_email, customer_gstin: c.gstin ?? f.customer_gstin, billing_address: c.address ?? f.billing_address })); }}
+              onPick={(c) => {
+                setCustomerId(c.id);
+                setForm((f) => ({
+                  ...f,
+                  customer_name: c.name,
+                  customer_email: c.email ?? f.customer_email,
+                  customer_gstin: c.gstin ?? f.customer_gstin,
+                  billing_address: c.address ?? f.billing_address,
+                  place_of_supply: c.gstin && /^\d{2}/.test(c.gstin) ? c.gstin.slice(0, 2) : f.place_of_supply,
+                }));
+              }}
               placeholder="Search a customer or type a new name" />
-            {customerId && <p className="mt-1 text-xs text-green-600">● Linked to customer — will post to their ledger</p>}
+            {customerId && isInvoice && <p className="mt-1 text-xs text-green-600">● Linked to customer — will post to their ledger</p>}
           </div>
           <div>
             <label className="mb-1 block text-sm text-neutral-600">Email</label>
-            <input type="email" value={form.customer_email}
-              onChange={(e) => setForm((f) => ({ ...f, customer_email: e.target.value }))}
-              placeholder="customer@example.com"
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            <input type="email" value={form.customer_email} onChange={(e) => setForm((f) => ({ ...f, customer_email: e.target.value }))} placeholder="customer@example.com" className={inputCls} />
           </div>
           <div>
             <label className="mb-1 block text-sm text-neutral-600">Customer GSTIN</label>
             <input type="text" value={form.customer_gstin}
-              onChange={(e) => setForm((f) => ({ ...f, customer_gstin: e.target.value.toUpperCase() }))}
-              placeholder="22AAAAA0000A1Z5" maxLength={15}
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              onChange={(e) => { const v = e.target.value.toUpperCase(); setForm((f) => ({ ...f, customer_gstin: v, place_of_supply: /^\d{2}/.test(v) ? v.slice(0, 2) : f.place_of_supply })); }}
+              placeholder="22AAAAA0000A1Z5" maxLength={15} className={`${inputCls} font-mono`} />
           </div>
           <div>
             <label className="mb-1 block text-sm text-neutral-600">Place of Supply</label>
-            <select value={form.place_of_supply}
-              onChange={(e) => setForm((f) => ({ ...f, place_of_supply: e.target.value }))}
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900">
+            <select value={form.place_of_supply} onChange={(e) => setForm((f) => ({ ...f, place_of_supply: e.target.value }))} className={inputCls}>
               <option value="">— Select state —</option>
-              {INDIAN_STATES.map((s) => (
-                <option key={s.code} value={s.code}>{s.code} – {s.name}</option>
-              ))}
+              {INDIAN_STATES.map((s) => <option key={s.code} value={s.code}>{s.code} – {s.name}</option>)}
             </select>
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm text-neutral-600">Billing Address</label>
-            <input type="text" value={form.billing_address}
-              onChange={(e) => setForm((f) => ({ ...f, billing_address: e.target.value }))}
-              placeholder="Street, City, State, PIN"
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            <input type="text" value={form.billing_address} onChange={(e) => setForm((f) => ({ ...f, billing_address: e.target.value }))} placeholder="Street, City, State, PIN" className={inputCls} />
           </div>
         </div>
       </div>
 
-      {/* Invoice details */}
+      {/* Document details */}
       <div className="rounded-xl border border-neutral-200 bg-white p-6">
-        <h2 className="mb-4 font-medium">Invoice Details</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <h2 className="mb-4 font-medium">{cfg.label} Details</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-sm text-neutral-600">Issue Date *</label>
-            <input type="date" value={form.issue_date}
-              onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))}
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            <label className="mb-1 block text-sm text-neutral-600">{effectiveDocType === 'quotation' ? 'Quote Date' : 'Issue Date'} *</label>
+            <input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} className={inputCls} />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-neutral-600">Due Date</label>
-            <input type="date" value={form.due_date}
-              onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            <label className="mb-1 block text-sm text-neutral-600">{effectiveDocType === 'quotation' ? 'Valid Until' : 'Due Date'}</label>
+            <input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} className={inputCls} />
+            <div className="mt-1 flex flex-wrap gap-1">
+              {PAYMENT_TERMS.map((t) => (
+                <button key={t.days} type="button" onClick={() => applyTerm(t.days)} className="rounded border border-neutral-200 px-1.5 py-0.5 text-[11px] text-neutral-500 hover:bg-neutral-50">{t.label}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-neutral-600">Currency</label>
+            <select value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))} className={inputCls}>
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-neutral-600">Reference / PO No.</label>
+            <input type="text" value={form.reference_no} onChange={(e) => setForm((f) => ({ ...f, reference_no: e.target.value }))} placeholder="optional" className={inputCls} />
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm text-neutral-600">Notes</label>
-            <textarea value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              rows={2} placeholder="Payment terms, thank you note, etc."
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            <input type="text" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Thank you note, delivery info, etc." className={inputCls} />
           </div>
         </div>
       </div>
@@ -202,136 +322,101 @@ export default function InvoiceForm({ defaultGst = 18, products = [], contacts =
       <div className="rounded-xl border border-neutral-200 bg-white p-6">
         <h2 className="mb-4 font-medium">Line Items</h2>
         <div className="space-y-3">
-          {/* Header row */}
-          <div className="hidden grid-cols-[1fr_90px_72px_110px_90px_96px_32px] gap-2 text-xs text-neutral-500 sm:grid">
-            <span>Description</span>
-            <span>HSN/SAC</span>
-            <span>Qty</span>
-            <span>Unit Price (₹)</span>
-            <span>GST %</span>
-            <span className="text-right">Amount</span>
-            <span />
+          <div className="hidden grid-cols-[1fr_80px_64px_96px_64px_80px_96px_28px] gap-2 text-xs text-neutral-500 sm:grid">
+            <span>Description</span><span>HSN/SAC</span><span>Qty</span><span>Rate</span><span>Disc %</span><span>GST %</span><span className="text-right">Amount</span><span />
           </div>
-
           {items.map((item, index) => (
-            <div key={index} className="grid grid-cols-[1fr_90px_72px_110px_90px_96px_32px] items-center gap-2">
-              <ProductPicker
-                value={item.description}
-                products={products}
+            <div key={index} className="grid grid-cols-[1fr_80px_64px_96px_64px_80px_96px_28px] items-center gap-2">
+              <ProductPicker value={item.description} products={products}
                 onChange={(v) => updateItem(index, 'description', v)}
                 onPick={(p) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate } : it))}
                 placeholder="Item description" />
-              <input type="text" value={item.hsn_code}
-                onChange={(e) => updateItem(index, 'hsn_code', e.target.value.replace(/\D/g, ''))}
-                placeholder="9983" maxLength={8}
-                className="rounded-lg border border-neutral-200 px-2 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-              <input type="number" value={item.quantity}
-                onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                min="0" step="0.001"
-                className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-              <input type="number" value={item.unit_price}
-                onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                min="0" step="0.01"
-                className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-              <select value={item.gst_rate}
-                onChange={(e) => updateItem(index, 'gst_rate', parseInt(e.target.value))}
-                className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900">
+              <input type="text" value={item.hsn_code} onChange={(e) => updateItem(index, 'hsn_code', e.target.value.replace(/\D/g, ''))} placeholder="9983" maxLength={8} className="rounded-lg border border-neutral-200 px-2 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              <input type="number" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)} min="0" step="0.001" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              <input type="number" value={item.unit_price} onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)} min="0" step="0.01" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              <input type="number" value={item.discount_pct} onChange={(e) => updateItem(index, 'discount_pct', Math.min(100, parseFloat(e.target.value) || 0))} min="0" max="100" step="0.01" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              <select value={item.gst_rate} onChange={(e) => updateItem(index, 'gst_rate', parseInt(e.target.value))} className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900">
                 {GST_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
               </select>
-              <div className="text-right text-sm font-medium">{fmt(item.quantity * item.unit_price)}</div>
-              <button type="button" onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))}
-                disabled={items.length === 1}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30"
-                aria-label="Remove item">×</button>
+              <div className="text-right text-sm font-medium">{money(totals.lines[index]?.amount ?? 0)}</div>
+              <button type="button" onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))} disabled={items.length === 1} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30" aria-label="Remove item">×</button>
             </div>
           ))}
         </div>
-
-        <button type="button" onClick={() => setItems((prev) => [...prev, emptyItem(defaultGst)])}
-          className="mt-3 text-sm text-neutral-500 hover:text-neutral-900">
-          + Add line item
-        </button>
+        <button type="button" onClick={() => setItems((prev) => [...prev, emptyItem(defaultGst)])} className="mt-3 text-sm text-neutral-500 hover:text-neutral-900">+ Add line item</button>
 
         {/* Totals */}
         <div className="mt-6 border-t border-neutral-100 pt-4">
-          <div className="ml-auto w-64 space-y-2 text-sm">
-            <div className="flex justify-between text-neutral-600">
-              <span>Subtotal</span><span>{fmt(subtotal)}</span>
+          <div className="ml-auto w-80 space-y-2 text-sm">
+            <div className="flex justify-between text-neutral-600"><span>Subtotal</span><span>{money(totals.lineSubtotal)}</span></div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1">
+                <span className="text-neutral-600">Discount</span>
+                <select value={billDiscType} onChange={(e) => setBillDiscType(e.target.value as '' | 'percent' | 'amount')} className="rounded border border-neutral-200 px-1 py-0.5 text-xs">
+                  <option value="">none</option><option value="percent">%</option><option value="amount">{CURRENCY_SYMBOLS[currency] ?? currency}</option>
+                </select>
+                {billDiscType && <input type="number" value={billDiscValue} onChange={(e) => setBillDiscValue(parseFloat(e.target.value) || 0)} min="0" step="0.01" className="w-20 rounded border border-neutral-200 px-1.5 py-0.5 text-xs" />}
+              </div>
+              <span className="text-neutral-600">− {money(totals.billDiscountAmount)}</span>
             </div>
-            <div className="flex justify-between text-neutral-600">
-              <span>GST</span><span>{fmt(gstTotal)}</span>
-            </div>
-            <div className="flex justify-between border-t border-neutral-200 pt-2 text-base font-semibold">
-              <span>Total</span><span>{fmt(total)}</span>
-            </div>
+            <div className="flex justify-between text-neutral-600"><span>Taxable Value</span><span>{money(totals.taxableTotal)}</span></div>
+            <div className="flex justify-between text-neutral-600"><span>GST</span><span>{money(totals.gstTotal)}</span></div>
+            <label className="flex items-center justify-between gap-2 text-neutral-600">
+              <span className="flex items-center gap-2"><input type="checkbox" checked={roundOff} onChange={(e) => setRoundOff(e.target.checked)} /> Round off</span>
+              <span>{totals.roundOff >= 0 ? '+' : '−'} {money(Math.abs(totals.roundOff))}</span>
+            </label>
+            <div className="flex justify-between border-t border-neutral-200 pt-2 text-base font-semibold"><span>Total</span><span>{money(totals.total)}</span></div>
+            <p className="pt-1 text-xs italic text-neutral-500">{amountInWords(totals.total, currency)}</p>
           </div>
         </div>
       </div>
 
-      {/* Payment */}
-      <div className="rounded-xl border border-neutral-200 bg-white p-6">
-        <h2 className="font-medium">Payment</h2>
-        <p className="mb-4 mt-1 text-sm text-neutral-500">How is the customer paying for this invoice?</p>
-        <div className="flex flex-wrap gap-2">
-          {([
-            ['credit', 'On Credit (Udhaar)'],
-            ['cash', 'Cash'],
-            ['upi', 'UPI'],
-            ['card', 'Card'],
-            ['bank_transfer', 'Bank Transfer'],
-          ] as const).map(([m, label]) => (
-            <button key={m} type="button"
-              onClick={() => { setPayMethod(m); if (m !== 'credit') setPayAmount(total.toFixed(2)); }}
-              className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
-                payMethod === m ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 hover:bg-neutral-50'
-              }`}>
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {payMethod === 'credit' ? (
-          <p className="mt-3 text-xs text-amber-600">
-            Invoice will stay outstanding.{' '}
-            {customerId
-              ? "The full amount is added to the customer's account (udhaar) in their ledger."
-              : 'Link a saved customer above to track this in their ledger.'}
-          </p>
-        ) : (
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm text-neutral-600">Amount received (₹)</label>
-              <div className="flex gap-2">
-                <input type="number" value={payAmount}
-                  onChange={(e) => setPayAmount(e.target.value)} min="0" step="0.01"
-                  placeholder={total.toFixed(2)}
-                  className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-                <button type="button" onClick={() => setPayAmount(total.toFixed(2))}
-                  className="whitespace-nowrap rounded-lg border border-neutral-200 px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50">
-                  Full
-                </button>
-              </div>
-              <p className="mt-1 text-xs text-neutral-400">
-                {(parseFloat(payAmount) || 0) >= total - 0.01
-                  ? 'Marks the invoice as paid.'
-                  : `Partial — ${fmt(Math.max(0, total - (parseFloat(payAmount) || 0)))} will stay outstanding.`}
-              </p>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm text-neutral-600">Reference / UTR / Txn No.</label>
-              <input type="text" value={payRef} onChange={(e) => setPayRef(e.target.value)}
-                placeholder="optional"
-                className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-            </div>
+      {/* Payment (real invoices, on create only) */}
+      {isInvoice && mode === 'create' && (
+        <div className="rounded-xl border border-neutral-200 bg-white p-6">
+          <h2 className="font-medium">Payment</h2>
+          <p className="mb-4 mt-1 text-sm text-neutral-500">How is the customer paying for this invoice?</p>
+          <div className="flex flex-wrap gap-2">
+            {([['credit', 'On Credit (Udhaar)'], ['cash', 'Cash'], ['upi', 'UPI'], ['card', 'Card'], ['bank_transfer', 'Bank Transfer']] as const).map(([m, label]) => (
+              <button key={m} type="button" onClick={() => { setPayMethod(m); if (m !== 'credit') setPayAmount(totals.total.toFixed(2)); }}
+                className={`rounded-lg border px-4 py-2 text-sm transition-colors ${payMethod === m ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 hover:bg-neutral-50'}`}>{label}</button>
+            ))}
           </div>
-        )}
+          {payMethod === 'credit' ? (
+            <p className="mt-3 text-xs text-amber-600">Invoice will stay outstanding. {customerId ? "The full amount is added to the customer's account (udhaar) in their ledger." : 'Link a saved customer above to track this in their ledger.'}</p>
+          ) : (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm text-neutral-600">Amount received</label>
+                <div className="flex gap-2">
+                  <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} min="0" step="0.01" placeholder={totals.total.toFixed(2)} className={inputCls} />
+                  <button type="button" onClick={() => setPayAmount(totals.total.toFixed(2))} className="whitespace-nowrap rounded-lg border border-neutral-200 px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50">Full</button>
+                </div>
+                <p className="mt-1 text-xs text-neutral-400">{(parseFloat(payAmount) || 0) >= totals.total - 0.01 ? 'Marks the invoice as paid.' : `Partial — ${money(Math.max(0, totals.total - (parseFloat(payAmount) || 0)))} will stay outstanding.`}</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-neutral-600">Reference / UTR / Txn No.</label>
+                <input type="text" value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="optional" className={inputCls} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Terms */}
+      <div className="rounded-xl border border-neutral-200 bg-white p-6">
+        <label className="mb-1 block text-sm font-medium text-neutral-700">Terms &amp; Conditions</label>
+        <textarea value={form.terms} onChange={(e) => setForm((f) => ({ ...f, terms: e.target.value }))} rows={2} placeholder="Payment terms, warranty, jurisdiction, etc." className={inputCls} />
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end">
-        <button type="button" onClick={handleSubmit} disabled={pending}
-          className="rounded-md bg-neutral-900 px-6 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50">
-          {pending ? 'Saving…' : payMethod === 'credit' ? 'Save Invoice' : 'Save & Record Payment'}
+      <div className="flex flex-wrap justify-end gap-3">
+        {mode === 'create' && (
+          <button type="button" onClick={() => handleSubmit('new')} disabled={pending} className="rounded-md border border-neutral-300 px-5 py-2 text-sm hover:bg-neutral-50 disabled:opacity-50">Save &amp; New</button>
+        )}
+        <button type="button" onClick={() => handleSubmit('print')} disabled={pending} className="rounded-md border border-neutral-300 px-5 py-2 text-sm hover:bg-neutral-50 disabled:opacity-50">Save &amp; Print</button>
+        <button type="button" onClick={() => handleSubmit('save')} disabled={pending} className="rounded-md bg-neutral-900 px-6 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50">
+          {pending ? 'Saving…' : mode === 'edit' ? `Update ${cfg.short}` : isInvoice && payMethod !== 'credit' && mode === 'create' ? 'Save & Record Payment' : `Save ${cfg.short}`}
         </button>
       </div>
     </div>

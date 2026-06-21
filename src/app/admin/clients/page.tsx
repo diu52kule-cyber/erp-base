@@ -24,7 +24,7 @@ export default async function ClientsPage() {
     admin.from('organizations').select('id,name,business_type,created_at').order('created_at', { ascending: false }),
     admin.from('org_plans').select('*'),
     admin.from('memberships').select('org_id'),
-    admin.from('invoices').select('org_id,total,status'),
+    admin.from('invoices').select('org_id,total,status').eq('doc_type', 'invoice'),
   ]);
 
   const planMap = Object.fromEntries((plans ?? []).map((p) => [p.org_id, p]));

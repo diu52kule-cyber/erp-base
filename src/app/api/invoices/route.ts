@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getOrgContext } from '@/lib/entitlements';
-import { deriveSupplyType, splitGst } from '@/lib/types/accounting';
+import { validateInvoiceInput } from '@/lib/invoice/server';
+import { createDocument } from '@/lib/invoice/create';
+import { isDocType, type DocType } from '@/lib/invoice/docTypes';
 import type { CreateInvoiceInput } from '@/lib/types/billing';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const ctx = await getOrgContext();
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const supabase = createClient();
-  const { data } = await supabase.from('invoices').select('id,invoice_number,customer_name,total,status,issue_date')
-    .eq('org_id', ctx.org.id).order('created_at', { ascending: false }).limit(100);
+  const docType = req.nextUrl.searchParams.get('doc_type') || 'invoice';
+  const { data } = await supabase
+    .from('invoices')
+    .select('id,invoice_number,customer_name,total,status,issue_date,currency')
+    .eq('org_id', ctx.org.id)
+    .eq('doc_type', docType)
+    .order('created_at', { ascending: false })
+    .limit(200);
   return NextResponse.json(data ?? []);
 }
 
@@ -19,164 +27,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const input: CreateInvoiceInput & { place_of_supply?: string } = await req.json();
+  const input: CreateInvoiceInput = await req.json();
+  const validationError = validateInvoiceInput(input);
+  if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
-  if (!input.customer_name?.trim()) {
-    return NextResponse.json({ error: 'Customer name is required' }, { status: 400 });
-  }
-  if (!input.items?.length || input.items.some((i) => !i.description.trim())) {
-    return NextResponse.json({ error: 'All line items must have a description' }, { status: 400 });
-  }
-
+  const docType: DocType = isDocType(input.doc_type) ? input.doc_type : 'invoice';
   const supabase = createClient();
 
-  const itemsWithTotals = input.items.map((item) => {
-    const amount = Math.round(item.quantity * item.unit_price * 100) / 100;
-    const gst_amount = Math.round(amount * item.gst_rate) / 100;
-    return { ...item, amount, gst_amount };
-  });
-
-  const subtotal = itemsWithTotals.reduce((s, i) => s + i.amount, 0);
-  const gst_amount = itemsWithTotals.reduce((s, i) => s + i.gst_amount, 0);
-  const total = Math.round((subtotal + gst_amount) * 100) / 100;
-
-  // Determine supply type and tax split
-  const supply_type = deriveSupplyType(input.customer_gstin ?? null, total);
-
-  // Check org state code to determine IGST vs CGST+SGST
   const { data: gstSettings } = await supabase
     .from('org_gst_settings')
     .select('state_code')
     .eq('org_id', ctx.org.id)
     .maybeSingle();
 
-  const orgStateCode = gstSettings?.state_code ?? null;
-  const placeOfSupply = input.place_of_supply || null;
-  const isInterState = !!(orgStateCode && placeOfSupply && orgStateCode !== placeOfSupply);
-  const { igst, cgst, sgst } = splitGst(gst_amount, isInterState);
-
-  const { data: invoiceNumber, error: seqErr } = await supabase.rpc(
-    'next_invoice_number',
-    { p_org_id: ctx.org.id }
-  );
-  if (seqErr || !invoiceNumber) {
-    return NextResponse.json(
-      { error: seqErr?.message ?? 'Failed to generate invoice number' },
-      { status: 500 }
-    );
-  }
-
-  const { data: invoice, error: invErr } = await supabase
-    .from('invoices')
-    .insert({
-      org_id: ctx.org.id,
-      invoice_number: invoiceNumber as string,
-      customer_id: (input as { customer_id?: string }).customer_id || null,
-      customer_name: input.customer_name.trim(),
-      customer_email: input.customer_email?.trim() || null,
-      customer_gstin: input.customer_gstin?.trim() || null,
-      billing_address: input.billing_address?.trim() || null,
-      place_of_supply: placeOfSupply,
-      supply_type,
-      status: 'draft',
-      issue_date: input.issue_date,
-      due_date: input.due_date || null,
-      notes: input.notes?.trim() || null,
-      subtotal,
-      gst_amount,
-      igst_amount: igst,
-      cgst_amount: cgst,
-      sgst_amount: sgst,
-      total,
-      created_by: ctx.user.id,
-    })
-    .select('id')
-    .single();
-
-  if (invErr || !invoice) {
-    return NextResponse.json(
-      { error: invErr?.message ?? 'Failed to create invoice' },
-      { status: 500 }
-    );
-  }
-
-  const { error: itemsErr } = await supabase.from('invoice_items').insert(
-    itemsWithTotals.map((item, index) => ({
-      invoice_id: invoice.id,
-      org_id: ctx.org!.id,
-      description: item.description.trim(),
-      hsn_code: (item as any).hsn_code || null,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      gst_rate: item.gst_rate,
-      amount: item.amount,
-      gst_amount: item.gst_amount,
-      sort_order: index,
-    }))
+  const result = await createDocument(
+    supabase,
+    {
+      orgId: ctx.org.id,
+      userId: ctx.user.id,
+      hasLedger: ctx.enabledModules.has('ledger'),
+      orgStateCode: gstSettings?.state_code ?? null,
+    },
+    input,
+    docType,
   );
 
-  if (itemsErr) {
-    return NextResponse.json({ error: itemsErr.message }, { status: 500 });
-  }
-
-  // Auto-post to the customer's credit ledger (receivable) if linked + ledger enabled.
-  const customerId = (input as { customer_id?: string }).customer_id;
-  if (customerId && ctx.enabledModules.has('ledger')) {
-    try {
-      await supabase.from('ledger_entries').insert({
-        org_id: ctx.org.id,
-        contact_id: customerId,
-        type: 'credit',
-        amount: total,
-        note: `Invoice ${invoiceNumber}`,
-        reference_type: 'invoice',
-        reference_id: invoice.id,
-        entry_date: input.issue_date,
-        created_by: ctx.user.id,
-      });
-    } catch { /* ledger optional — never block invoice creation */ }
-  }
-
-  // Optionally record a payment captured at invoice creation ("record payment
-  // while invoicing"). 'credit' means unpaid, so nothing is recorded here.
-  const pay = (input as { payment?: { method?: string; amount?: number; reference?: string } | null }).payment;
-  if (pay && pay.method && pay.method !== 'credit') {
-    const payAmt = Number(pay.amount) || 0;
-    if (payAmt > 0) {
-      try {
-        await supabase.from('payments').insert({
-          org_id: ctx.org.id,
-          invoice_id: invoice.id,
-          amount: payAmt,
-          method: pay.method,
-          status: 'completed',
-          reference_number: pay.reference?.trim() || null,
-          paid_at: input.issue_date,
-          created_by: ctx.user.id,
-        });
-        const fullyPaid = payAmt >= total - 0.01;
-        await supabase
-          .from('invoices')
-          .update({ status: fullyPaid ? 'paid' : 'sent' })
-          .eq('id', invoice.id)
-          .eq('org_id', ctx.org.id);
-        // Reduce the customer's receivable in the ledger.
-        if (customerId && ctx.enabledModules.has('ledger')) {
-          await supabase.from('ledger_entries').insert({
-            org_id: ctx.org.id,
-            contact_id: customerId,
-            type: 'payment',
-            amount: -Math.abs(payAmt),
-            note: `Payment on ${invoiceNumber}`,
-            reference_type: 'payment',
-            reference_id: invoice.id,
-            entry_date: input.issue_date,
-            created_by: ctx.user.id,
-          });
-        }
-      } catch { /* payment optional — never block invoice creation */ }
-    }
-  }
-
-  return NextResponse.json({ id: invoice.id });
+  if ('error' in result) return NextResponse.json({ error: result.error }, { status: 500 });
+  return NextResponse.json({ id: result.id });
 }

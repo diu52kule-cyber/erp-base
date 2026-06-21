@@ -163,6 +163,19 @@ modules; the platform enables only what each customer's plan includes.
   map intersected with org entitlements in `getOrgContext` (UI-level gating); role-gated Settings
   tabs + owner/admin enforcement on API-key/webhook routes; app Preferences (font/size/theme via
   localStorage). Migration: `0024_more_roles.sql` (widen role CHECK constraints).
+- [x] **Phase 24** — Credit/Udhaar payments + professional invoicing overhaul (AUDIT section A).
+  Payment methods gained Card + Credit/Udhaar; "record payment while invoicing" on the New Invoice
+  form; full document engine on the `invoices` table via `doc_type`
+  (`invoice/quotation/proforma/delivery_challan/credit_note`) with per-line + bill discounts,
+  round-off, partial-payment tracking (`amount_paid`/balance due), multi-currency, terms, reference
+  no., amount-in-words; **Edit / Void-Delete** (ledger re-synced), **Duplicate**, **Convert
+  quote/proforma → invoice**, **Credit Note** (sales return, reverses receivable); **Recurring
+  invoices** (`recurring_invoices` + daily Vercel cron `/api/cron/recurring`, needs `CRON_SECRET`);
+  Settings → **Invoice settings** (`org_invoice_settings`: bank/UPI/logo/signature/T&C/round-off/
+  due-days) shown on detail + PDF incl. **UPI QR** (new dep `qrcode`); **e-Invoice (IRN)** + **e-Way
+  bill** portal JSON export (offline; auto-IRN still needs a GSP API). Shared math in
+  `src/lib/invoice/*`. All sales/GST/revenue queries now filter `doc_type='invoice'`.
+  Migrations: `0029_payment_methods.sql`, `0030_invoicing_pro.sql`.
 
 > See `ROADMAP.md` for what's next (offline POS, QR ordering, WhatsApp, analytics, AI metering,
 > loyalty CRM, hardware) and the security hardening backlog (RLS-by-role, API-level guards).

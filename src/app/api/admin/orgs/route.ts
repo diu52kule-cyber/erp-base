@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     admin.from('entitlements').select('org_id,module_key,enabled').eq('enabled', true),
   ]);
 
-  const { data: invoiceStats } = await admin.from('invoices').select('org_id,total,status');
+  const { data: invoiceStats } = await admin.from('invoices').select('org_id,total,status').eq('doc_type', 'invoice');
 
   const planMap = Object.fromEntries((plans ?? []).map((p) => [p.org_id, p]));
   const memberCount = (members ?? []).reduce<Record<string, number>>((acc, m) => {

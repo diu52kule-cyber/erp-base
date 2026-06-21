@@ -25,6 +25,7 @@ export default async function AccountingPage() {
       .from('invoices')
       .select('subtotal,gst_amount,igst_amount,cgst_amount,sgst_amount,total,supply_type,status')
       .eq('org_id', ctx.org.id)
+      .eq('doc_type', 'invoice')
       .in('status', ['sent', 'paid'])
       .gte('issue_date', start)
       .lte('issue_date', end),

@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     .from('invoices')
     .select('id,invoice_number,customer_name,customer_gstin,place_of_supply,issue_date,subtotal,gst_amount,igst_amount,cgst_amount,sgst_amount,total')
     .eq('org_id', ctx.org.id)
+    .eq('doc_type', 'invoice')
     .in('status', ['sent', 'paid'])
     .gte('issue_date', start)
     .lte('issue_date', end)

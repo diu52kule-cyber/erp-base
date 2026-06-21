@@ -15,6 +15,7 @@ export default async function NewPaymentPage({ searchParams }: Props) {
     .from('invoices')
     .select('id, invoice_number, customer_name, total')
     .eq('org_id', ctx.org!.id)
+    .eq('doc_type', 'invoice')
     .in('status', ['draft', 'sent'])
     .order('created_at', { ascending: false });
 

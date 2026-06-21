@@ -25,7 +25,7 @@ export default async function ReportsPage() {
     { data: deals },
     { data: payrollRuns },
   ] = await Promise.all([
-    supabase.from('invoices').select('id,status,total,created_at').eq('org_id', orgId),
+    supabase.from('invoices').select('id,status,total,created_at').eq('org_id', orgId).eq('doc_type', 'invoice'),
     supabase.from('employees').select('id,status,monthly_salary,employment_type').eq('org_id', orgId),
     supabase.from('products').select('id,name,stock_qty,selling_price,low_stock_threshold').eq('org_id', orgId),
     supabase.from('contacts').select('id,type,created_at').eq('org_id', orgId),

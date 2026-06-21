@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     admin.from('org_plans').select('*').eq('org_id', id).maybeSingle(),
     admin.from('memberships').select('user_id,role').eq('org_id', id),
     admin.from('entitlements').select('module_key,enabled').eq('org_id', id),
-    admin.from('invoices').select('total,status').eq('org_id', id),
+    admin.from('invoices').select('total,status').eq('org_id', id).eq('doc_type', 'invoice'),
     admin.from('employees').select('id').eq('org_id', id),
   ]);
 

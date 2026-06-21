@@ -41,6 +41,7 @@ export default async function PaymentsPage() {
       .from('invoices')
       .select('id, invoice_number, customer_name, total')
       .eq('org_id', ctx.org!.id)
+      .eq('doc_type', 'invoice')
       .in('status', ['draft', 'sent']),
   ]);
 
