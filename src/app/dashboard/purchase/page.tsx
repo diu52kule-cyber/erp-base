@@ -4,6 +4,7 @@ import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import { PO_STATUS_LABELS, PO_STATUS_COLORS, BILL_STATUS_LABELS, BILL_STATUS_COLORS } from '@/lib/types/purchase';
 import type { PurchaseOrder, VendorBill } from '@/lib/types/purchase';
+import PageHotkeys from '@/components/PageHotkeys';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n ?? 0);
@@ -29,6 +30,7 @@ export default async function PurchasePage() {
 
   return (
     <div className="space-y-8">
+      <PageHotkeys newHref="/dashboard/purchase/new" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Purchase Orders</h1>

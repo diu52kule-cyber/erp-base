@@ -2,18 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
-import type { Invoice, InvoiceStatus } from '@/lib/types/billing';
+import type { Invoice } from '@/lib/types/billing';
 import { DOC_TYPES, isDocType, type DocType } from '@/lib/invoice/docTypes';
-import { fmtMoney } from '@/lib/invoice/format';
-
-const STATUS_STYLES: Record<InvoiceStatus, string> = {
-  draft: 'bg-neutral-100 text-neutral-600',
-  sent: 'bg-blue-50 text-blue-700',
-  partial: 'bg-amber-50 text-amber-700',
-  paid: 'bg-green-50 text-green-700',
-  refunded: 'bg-red-50 text-red-600',
-  cancelled: 'bg-neutral-100 text-neutral-400',
-};
+import BillingTable from './BillingTable';
 
 const TABS: { type: DocType | 'recurring'; label: string }[] = [
   { type: 'invoice', label: 'Invoices' },
@@ -64,35 +55,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { ty
           <Link href={`/dashboard/billing/new?type=${docType}`} className="text-neutral-900 underline">Create your first {cfg.short.toLowerCase()}.</Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-100 bg-neutral-50 text-neutral-500">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">{cfg.short} #</th>
-                <th className="px-4 py-3 text-left font-medium">Customer</th>
-                <th className="px-4 py-3 text-left font-medium">Date</th>
-                <th className="px-4 py-3 text-right font-medium">Amount</th>
-                {docType === 'invoice' && <th className="px-4 py-3 text-right font-medium">Balance</th>}
-                <th className="px-4 py-3 text-left font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {invoices.map((inv) => {
-                const balance = Math.max(0, (inv.total ?? 0) - (inv.amount_paid ?? 0));
-                return (
-                  <tr key={inv.id} className="hover:bg-neutral-50">
-                    <td className="px-4 py-3"><Link href={`/dashboard/billing/${inv.id}`} className="font-medium text-neutral-900 hover:underline">{inv.invoice_number}</Link></td>
-                    <td className="px-4 py-3 text-neutral-700">{inv.customer_name}</td>
-                    <td className="px-4 py-3 text-neutral-500">{new Date(inv.issue_date).toLocaleDateString('en-IN')}</td>
-                    <td className="px-4 py-3 text-right font-medium">{fmtMoney(inv.total, inv.currency ?? 'INR')}</td>
-                    {docType === 'invoice' && <td className={`px-4 py-3 text-right ${balance > 0 ? 'text-amber-600' : 'text-neutral-400'}`}>{balance > 0 ? fmtMoney(balance, inv.currency ?? 'INR') : '—'}</td>}
-                    <td className="px-4 py-3"><span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[inv.status as InvoiceStatus] ?? STATUS_STYLES.draft}`}>{inv.status}</span></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <BillingTable invoices={invoices} docType={docType} shortLabel={cfg.short} />
       )}
     </div>
   );

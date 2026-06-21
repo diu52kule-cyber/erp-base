@@ -3,9 +3,9 @@ import { redirect } from 'next/navigation';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import type { Product } from '@/lib/types/inventory';
-import StockAdjuster from './StockAdjuster';
-import LabelButton from './LabelButton';
 import EmptyState from '@/components/EmptyState';
+import PageHotkeys from '@/components/PageHotkeys';
+import InventoryTable from './InventoryTable';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
@@ -118,6 +118,7 @@ export default async function InventoryPage({
         </div>
       )}
 
+      <PageHotkeys newHref="/dashboard/inventory/new" />
       {!products?.length ? (
         <EmptyState
           icon="📦"
@@ -127,66 +128,7 @@ export default async function InventoryPage({
           actionHref="/dashboard/inventory/new"
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-500">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Product</th>
-                <th className="px-4 py-3 text-left font-medium">SKU</th>
-                <th className="px-4 py-3 text-right font-medium">Price</th>
-                <th className="px-4 py-3 text-right font-medium">Cost</th>
-                <th className="px-4 py-3 text-right font-medium">Margin</th>
-                <th className="px-4 py-3 text-right font-medium">GST</th>
-                <th className="px-4 py-3 text-right font-medium">Stock</th>
-                <th className="px-4 py-3 text-center font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
-              {products.map((p) => {
-                const isLow = p.low_stock_threshold > 0 && p.stock_qty <= p.low_stock_threshold;
-                const basePrice = p.tax_inclusive ? p.selling_price / (1 + p.gst_rate / 100) : p.selling_price;
-                const margin = p.cost_price > 0 ? ((basePrice - p.cost_price) / basePrice) * 100 : null;
-                return (
-                  <tr key={p.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-700/50">
-                    <td className="px-4 py-3">
-                      <Link href={`/dashboard/inventory/${p.id}`} className="font-medium text-neutral-900 dark:text-neutral-100 hover:underline">
-                        {p.name}
-                      </Link>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {p.category && <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700">{p.category}</span>}
-                        {p.tax_inclusive && <span className="rounded-full bg-purple-50 px-1.5 py-0.5 text-xs text-purple-700">incl. tax</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-neutral-500">{p.sku ?? '—'}</td>
-                    <td className="px-4 py-3 text-right">{fmt(p.selling_price)}</td>
-                    <td className="px-4 py-3 text-right text-neutral-500">{p.cost_price > 0 ? fmt(p.cost_price) : '—'}</td>
-                    <td className="px-4 py-3 text-right">
-                      {margin !== null ? (
-                        <span className={margin < 0 ? 'text-red-500 font-medium' : 'text-green-600 font-medium'}>
-                          {margin.toFixed(1)}%
-                        </span>
-                      ) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right text-neutral-500">{p.gst_rate}%</td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={isLow ? 'font-semibold text-amber-600' : 'font-medium'}>
-                        {p.stock_qty} {p.unit}
-                      </span>
-                      {isLow && <span className="ml-1 text-xs text-amber-500">low</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-1">
-                        <LabelButton name={p.name} price={p.selling_price} code={p.barcode || p.sku || ''} />
-                        <StockAdjuster productId={p.id} currentQty={p.stock_qty} unit={p.unit} />
-                        <Link href={`/dashboard/inventory/${p.id}/edit`} className="rounded-md border border-neutral-200 px-2 py-1 text-xs hover:bg-neutral-50">Edit</Link>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <InventoryTable products={products} />
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import { PAYMENT_METHOD_LABELS } from '@/lib/types/payments';
 import type { Payment } from '@/lib/types/payments';
 import RemindersButton from './RemindersButton';
 import RefundButton from './RefundButton';
+import PageHotkeys from '@/components/PageHotkeys';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -82,6 +83,7 @@ export default async function PaymentsPage() {
 
   return (
     <div className="space-y-6">
+      <PageHotkeys newHref="/dashboard/payments/new" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Payments</h1>
         <div className="flex items-center gap-2">

@@ -9,6 +9,7 @@ import {
   DEAL_STAGE_COLORS,
   DEAL_STAGES,
 } from '@/lib/types/crm';
+import PageHotkeys from '@/components/PageHotkeys';
 import type { Contact, Deal, DealStage } from '@/lib/types/crm';
 
 function fmt(n: number) {
@@ -53,6 +54,7 @@ export default async function CRMPage() {
 
   return (
     <div className="space-y-8">
+      <PageHotkeys newHref="/dashboard/crm/contacts/new" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">CRM</h1>
