@@ -5,17 +5,23 @@ function fmt(n: number) { return '₹' + Number(n).toLocaleString('en-IN', { min
 
 export default function CloseSessionForm({ sessionId, expectedCash }: { sessionId: string; expectedCash: number }) {
   const [cash, setCash] = useState('');
+  const [varianceReason, setVarianceReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const counted = parseFloat(cash) || 0;
   const variance = counted - expectedCash;
+  const hasVariance = cash !== '' && Math.abs(variance) >= 0.01;
 
   async function close() {
     setBusy(true); setErr(null);
     const res = await fetch(`/api/pos/sessions/${sessionId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ closing_cash: counted, status: 'closed' }),
+      body: JSON.stringify({
+        closing_cash: counted,
+        status: 'closed',
+        variance_reason: varianceReason.trim() || undefined,
+      }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { setErr(data.error || 'Failed to close session'); setBusy(false); return; }
@@ -36,10 +42,18 @@ export default function CloseSessionForm({ sessionId, expectedCash }: { sessionI
       </div>
       {cash !== '' && (
         <div className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
-          Math.abs(variance) < 0.01 ? 'bg-green-50 text-green-700' : variance > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
+          !hasVariance ? 'bg-green-50 text-green-700' : variance > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
         }`}>
-          <span>{Math.abs(variance) < 0.01 ? 'Balanced' : variance > 0 ? 'Over' : 'Short'}</span>
-          <span className="font-medium">{fmt(Math.abs(variance))}</span>
+          <span>{!hasVariance ? 'Balanced' : variance > 0 ? 'Over' : 'Short'}</span>
+          <span className="font-medium">{!hasVariance ? 'Exact match' : `${variance > 0 ? '+' : '−'}${fmt(Math.abs(variance))}`}</span>
+        </div>
+      )}
+      {hasVariance && (
+        <div>
+          <label className="text-sm text-neutral-600">Variance reason</label>
+          <input type="text" value={varianceReason} onChange={(e) => setVarianceReason(e.target.value)}
+            placeholder="e.g. Tips kept, petty cash used…"
+            className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none" />
         </div>
       )}
       {err && <p className="text-sm text-red-600">{err}</p>}

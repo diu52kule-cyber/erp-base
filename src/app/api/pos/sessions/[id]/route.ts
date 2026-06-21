@@ -22,6 +22,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.closing_cash !== undefined) updates.closing_cash = body.closing_cash;
   if (body.status) updates.status = body.status;
   if (body.status === 'closed') updates.closed_at = new Date().toISOString();
+  if (body.variance_reason !== undefined) updates.variance_reason = body.variance_reason;
+  if (body.notes !== undefined) updates.notes = body.notes;
   const { error } = await supabase.from('pos_sessions').update(updates)
     .eq('id', params.id).eq('org_id', ctx.org.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

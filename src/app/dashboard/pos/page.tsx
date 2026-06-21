@@ -11,13 +11,17 @@ export default async function POSPage() {
 
   const supabase = await createClient();
 
-  const { data: session } = await supabase
-    .from('pos_sessions').select('*').eq('org_id', ctx.org.id).eq('status', 'open').maybeSingle();
+  const [{ data: session }, contactsResult] = await Promise.all([
+    supabase.from('pos_sessions').select('*').eq('org_id', ctx.org.id).eq('status', 'open').maybeSingle(),
+    supabase.from('contacts').select('id,name,email').eq('org_id', ctx.org.id).eq('is_active', true).order('name').limit(200),
+  ]);
+
+  const contacts = contactsResult.data ?? [];
 
   // Include barcode when the column exists (migration 0025); fall back gracefully if not.
   const withBarcode = await supabase
     .from('products')
-    .select('id,name,sku,barcode,unit_price:selling_price,gst_rate,stock_qty')
+    .select('id,name,sku,barcode,unit_price:selling_price,gst_rate,stock_qty,category,tax_inclusive')
     .eq('org_id', ctx.org.id).eq('is_active', true).order('name');
   let products: any[] = withBarcode.data ?? [];
   if (withBarcode.error) {
@@ -46,7 +50,7 @@ export default async function POSPage() {
       </div>
 
       {session ? (
-        <POSTerminal sessionId={session.id} products={products ?? []} />
+        <POSTerminal sessionId={session.id} products={products ?? []} contacts={contacts} />
       ) : (
         <OpenSessionForm />
       )}
