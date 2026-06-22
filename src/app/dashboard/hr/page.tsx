@@ -55,6 +55,9 @@ export default async function HRPage() {
           <Link href="/dashboard/hr/loans" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
             Loans
           </Link>
+          <Link href="/dashboard/hr/shifts" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            Shifts
+          </Link>
           <Link href="/dashboard/hr/attendance" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
             Attendance
           </Link>

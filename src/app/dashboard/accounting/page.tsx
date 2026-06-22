@@ -139,6 +139,7 @@ export default async function AccountingPage() {
             { title: 'Balance Sheet', desc: 'Assets, liabilities, and equity snapshot.', href: '/dashboard/accounting/balance-sheet', badge: 'Position' },
             { title: 'Journal Entries', desc: 'Manual double-entry bookkeeping.', href: '/dashboard/accounting/journals', badge: 'Ledger' },
             { title: 'Receivables Ageing', desc: 'Outstanding invoices bucketed by overdue period.', href: '/dashboard/accounting/ageing', badge: 'Collections' },
+            { title: 'Opening Balances', desc: 'Set account opening balances for each financial year.', href: '/dashboard/accounting/opening-balances', badge: 'Setup' },
           ].map((r) => (
             <Link key={r.title} href={r.href}
               className="rounded-xl border border-neutral-200 bg-white p-5 hover:bg-neutral-50 transition-colors group space-y-2">
