@@ -54,6 +54,17 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
     activityList = (acts ?? []) as Activity[];
   } catch { /* table not yet migrated */ }
 
+  let loyaltyAccount: { points: number; lifetime_points: number } | null = null;
+  let loyaltyTx: { id: string; points: number; type: string; notes: string | null; created_at: string }[] = [];
+  try {
+    const [{ data: la }, { data: lt }] = await Promise.all([
+      supabase.from('loyalty_accounts').select('points,lifetime_points').eq('contact_id', id).eq('org_id', ctx.org.id).maybeSingle(),
+      supabase.from('loyalty_transactions').select('id,points,type,notes,created_at').eq('contact_id', id).eq('org_id', ctx.org.id).order('created_at', { ascending: false }).limit(20),
+    ]);
+    loyaltyAccount = la ?? null;
+    loyaltyTx = (lt ?? []) as typeof loyaltyTx;
+  } catch { /* loyalty tables not yet run */ }
+
   if (!contact) notFound();
 
   const c = contact as ContactExtended;
@@ -213,6 +224,57 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           </div>
         )}
       </div>
+
+      {/* Loyalty */}
+      {loyaltyAccount && (
+        <div>
+          <h2 className="mb-3 font-medium">Loyalty Points</h2>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-4">
+            <div className="flex items-center gap-6">
+              <div>
+                <p className="text-xs text-amber-600">Current Balance</p>
+                <p className="text-3xl font-bold text-amber-800">{loyaltyAccount.points} pts</p>
+              </div>
+              <div>
+                <p className="text-xs text-amber-600">Lifetime Earned</p>
+                <p className="text-2xl font-semibold text-amber-700">{loyaltyAccount.lifetime_points} pts</p>
+              </div>
+              <div>
+                <p className="text-xs text-amber-600">Redemption Value</p>
+                <p className="text-2xl font-semibold text-amber-700">{fmt(loyaltyAccount.points / 10)}</p>
+              </div>
+            </div>
+            {loyaltyTx.length > 0 && (
+              <div className="overflow-hidden rounded-xl border border-amber-200 bg-white">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-amber-100 bg-amber-50/50 text-xs text-amber-600">
+                    <th className="px-4 py-2 text-left font-medium">Date</th>
+                    <th className="px-4 py-2 text-left font-medium">Type</th>
+                    <th className="px-4 py-2 text-left font-medium">Notes</th>
+                    <th className="px-4 py-2 text-right font-medium">Points</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-amber-100">
+                    {loyaltyTx.map((tx) => (
+                      <tr key={tx.id}>
+                        <td className="px-4 py-2 text-xs text-neutral-500">{new Date(tx.created_at).toLocaleDateString('en-IN')}</td>
+                        <td className="px-4 py-2">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tx.type === 'earn' ? 'bg-green-50 text-green-700' : tx.type === 'redeem' ? 'bg-red-50 text-red-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                            {tx.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-xs text-neutral-500">{tx.notes ?? '—'}</td>
+                        <td className={`px-4 py-2 text-right font-mono font-medium ${tx.points > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {tx.points > 0 ? '+' : ''}{tx.points}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Activity Timeline */}
       <div>

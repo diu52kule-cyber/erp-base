@@ -44,6 +44,10 @@ export default function POSTerminal({
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
 
+  // ── Loyalty ───────────────────────────────────────────────────────
+  const [loyaltyBalance, setLoyaltyBalance] = useState<number | null>(null);
+  const [redeemPoints, setRedeemPoints]     = useState('');
+
   // ── Cash modal ────────────────────────────────────────────────────
   const [cashModal, setCashModal] = useState(false);
   const [cashType, setCashType]   = useState<'in' | 'out'>('in');
@@ -90,10 +94,14 @@ export default function POSTerminal({
   const billDiscAmt = r2(billDiscType === 'percent' ? grossTotal * billDiscNum / 100 : Math.min(billDiscNum, grossTotal));
   const total       = r2(Math.max(0, grossTotal - billDiscAmt));
 
+  const redeemPts     = Math.min(Math.floor(parseFloat(redeemPoints) || 0), loyaltyBalance ?? 0);
+  const loyaltyDiscAmt = r2(redeemPts / 10); // 10 points = ₹1
+  const finalTotal    = r2(Math.max(0, total - loyaltyDiscAmt));
+
   const tenderedTotal = r2(tenders.reduce((s, t) => s + (parseFloat(t.amount) || 0), 0));
-  const remaining     = r2(total - tenderedTotal);
+  const remaining     = r2(finalTotal - tenderedTotal);
   const cashTendered  = tenders.find((t) => t.method === 'cash');
-  const change        = tenders.length === 1 && cashTendered ? r2((parseFloat(cashTendered.amount) || 0) - total) : 0;
+  const change        = tenders.length === 1 && cashTendered ? r2((parseFloat(cashTendered.amount) || 0) - finalTotal) : 0;
 
   // ── Scanner helpers ───────────────────────────────────────────────
   function exactMatch(q: string): Product | null {
@@ -159,10 +167,20 @@ export default function POSTerminal({
   }
 
   // ── Tender helpers ────────────────────────────────────────────────
-  function goToTender() {
+  async function goToTender() {
+    setRedeemPoints('');
+    setLoyaltyBalance(null);
     setTenders([{ method: 'cash', amount: total.toFixed(2) }]);
     setError(null);
     setScreen('tender');
+    if (customerId) {
+      try {
+        const res = await fetch(`/api/loyalty?contact_id=${customerId}`);
+        const data = await res.json();
+        const bal = Array.isArray(data) ? (data[0]?.points ?? 0) : 0;
+        setLoyaltyBalance(bal);
+      } catch { /* loyalty tables not yet run */ }
+    }
   }
   function addTender() { setTenders((t) => [...t, { method: 'upi', amount: remaining > 0 ? remaining.toFixed(2) : '' }]); }
   function removeTender(i: number) { setTenders((t) => t.filter((_, idx) => idx !== i)); }
@@ -177,6 +195,7 @@ export default function POSTerminal({
     setLoading(true); setError(null);
     const splitTenders = tenders.length > 1 ? tenders.map((t) => ({ method: t.method, amount: parseFloat(t.amount) || 0 })) : null;
     const singleMethod = tenders[0]?.method ?? 'cash';
+    const totalDiscAmt = r2(billDiscAmt + loyaltyDiscAmt);
     const res = await fetch('/api/pos/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -186,10 +205,10 @@ export default function POSTerminal({
         customer_name: customerName || undefined,
         payment_method: splitTenders ? 'split' : singleMethod,
         split_tenders: splitTenders,
-        amount_tendered: splitTenders ? tenderedTotal : (parseFloat(tenders[0]?.amount || '') || total),
-        discount_type: billDiscAmt > 0 ? billDiscType : undefined,
-        discount_value: billDiscAmt > 0 ? billDiscNum : 0,
-        discount_amount: billDiscAmt,
+        amount_tendered: splitTenders ? tenderedTotal : (parseFloat(tenders[0]?.amount || '') || finalTotal),
+        discount_type: totalDiscAmt > 0 ? billDiscType : undefined,
+        discount_value: totalDiscAmt > 0 ? billDiscNum : 0,
+        discount_amount: totalDiscAmt,
         items: cart.map((i) => ({
           product_id: i.id, description: i.name, quantity: i.qty,
           unit_price: i.unit_price, gst_rate: i.gst_rate, discount_pct: i.discountPct,
@@ -199,29 +218,40 @@ export default function POSTerminal({
     const data = await res.json();
     if (data.error) { setError(data.error); setLoading(false); return; }
 
-    // Auto-earn loyalty points (1 pt per ₹10 spent) if customer is selected
+    // Redeem loyalty points if used
+    if (customerId && redeemPts > 0) {
+      try {
+        await fetch('/api/loyalty', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contact_id: customerId, points: redeemPts, type: 'redeem',
+            reference_id: data.id, reference_type: 'pos_order',
+          }),
+        });
+      } catch { /* silently skip */ }
+    }
+
+    // Earn loyalty points (1 pt per ₹10 of finalTotal)
     let pointsEarned = 0;
     if (customerId) {
-      pointsEarned = Math.floor(total / 10);
+      pointsEarned = Math.floor(finalTotal / 10);
       if (pointsEarned > 0) {
         try {
           await fetch('/api/loyalty', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contact_id: customerId,
-              points: pointsEarned,
-              type: 'earn',
-              reference_id: data.id,
-              reference_type: 'pos_order',
+              contact_id: customerId, points: pointsEarned, type: 'earn',
+              reference_id: data.id, reference_type: 'pos_order',
             }),
           });
         } catch { /* loyalty not yet activated — silently skip */ }
       }
     }
 
-    setLastOrder({ ...data, cart: [...cart], subtotal, gstAmount, billDiscAmt, total, tenders: [...tenders], tableLabel, customerName, pointsEarned });
-    clearCart(); setScreen('receipt'); setLoading(false);
+    setLastOrder({ ...data, cart: [...cart], subtotal, gstAmount, billDiscAmt: totalDiscAmt, total: finalTotal, tenders: [...tenders], tableLabel, customerName, pointsEarned, redeemPts });
+    clearCart(); setRedeemPoints(''); setLoyaltyBalance(null); setScreen('receipt'); setLoading(false);
   }
 
   // ── New order ─────────────────────────────────────────────────────
@@ -296,10 +326,19 @@ export default function POSTerminal({
           {lastOrder.isRefund && <p className="text-sm font-medium text-red-600">REFUND</p>}
           {lastOrder.tableLabel && <p className="text-sm text-neutral-500">Table: {lastOrder.tableLabel}</p>}
           {lastOrder.customerName && <p className="text-sm text-neutral-500">Customer: {lastOrder.customerName}</p>}
-          {lastOrder.pointsEarned > 0 && (
-            <p className="text-xs font-medium text-amber-700 bg-amber-50 rounded-lg px-3 py-1 inline-block">
-              +{lastOrder.pointsEarned} loyalty points earned
-            </p>
+          {(lastOrder.pointsEarned > 0 || lastOrder.redeemPts > 0) && (
+            <div className="space-y-1">
+              {lastOrder.redeemPts > 0 && (
+                <p className="text-xs font-medium text-amber-700 bg-amber-50 rounded-lg px-3 py-1 inline-block">
+                  −{lastOrder.redeemPts} pts redeemed (−{fmt(lastOrder.redeemPts / 10)})
+                </p>
+              )}
+              {lastOrder.pointsEarned > 0 && (
+                <p className="text-xs font-medium text-green-700 bg-green-50 rounded-lg px-3 py-1 inline-block">
+                  +{lastOrder.pointsEarned} loyalty points earned
+                </p>
+              )}
+            </div>
           )}
           <div className="text-left rounded-xl bg-white border border-green-100 p-4 text-sm space-y-1">
             {lastOrder.cart.map((i: any, idx: number) => (
@@ -395,10 +434,49 @@ export default function POSTerminal({
         <h2 className="text-2xl font-bold">Checkout</h2>
         <div className="w-full rounded-xl border border-neutral-200 bg-white p-5 text-center">
           <p className="text-neutral-500 text-sm">Total Amount</p>
-          <p className="text-4xl font-bold mt-1">{fmt(total)}</p>
+          <p className="text-4xl font-bold mt-1">{fmt(finalTotal)}</p>
           {billDiscAmt > 0 && <p className="text-xs text-amber-600 mt-1">Discount: −{fmt(billDiscAmt)}</p>}
+          {loyaltyDiscAmt > 0 && <p className="text-xs text-amber-700 mt-0.5">Loyalty redeem: −{fmt(loyaltyDiscAmt)}</p>}
           {customerName && <p className="text-xs text-neutral-400 mt-1">{customerName}</p>}
         </div>
+
+        {/* Loyalty redemption */}
+        {customerId && loyaltyBalance !== null && loyaltyBalance > 0 && (
+          <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-amber-800">Loyalty Points</p>
+              <span className="text-sm font-bold text-amber-700">{loyaltyBalance} pts available</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={redeemPoints}
+                onChange={(e) => {
+                  const v = Math.min(parseInt(e.target.value) || 0, loyaltyBalance);
+                  setRedeemPoints(v > 0 ? String(v) : '');
+                  const newTotal = r2(Math.max(0, total - v / 10));
+                  setTenders([{ method: tenders[0]?.method ?? 'cash', amount: newTotal.toFixed(2) }]);
+                }}
+                placeholder="Points to redeem"
+                min={0}
+                max={loyaltyBalance}
+                className="flex-1 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm focus:outline-none"
+              />
+              <button
+                onClick={() => {
+                  const maxPts = Math.min(loyaltyBalance, Math.floor(total * 10));
+                  setRedeemPoints(String(maxPts));
+                  const newTotal = r2(Math.max(0, total - maxPts / 10));
+                  setTenders([{ method: tenders[0]?.method ?? 'cash', amount: newTotal.toFixed(2) }]);
+                }}
+                className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs text-white hover:bg-amber-700"
+              >
+                Use all
+              </button>
+            </div>
+            <p className="text-xs text-amber-600">10 pts = ₹1 discount</p>
+          </div>
+        )}
 
         <div className="w-full space-y-3">
           {tenders.map((t, i) => (
