@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 
-type PosTable = { id: string; name: string; status: 'free' | 'occupied' };
+type PosTable = { id: string; name: string; status: 'free' | 'occupied'; qr_token?: string | null };
 
 export default function TablesClient({ initialTables }: { initialTables: PosTable[] }) {
   const [tables, setTables] = useState<PosTable[]>(initialTables);
   const [newName, setNewName] = useState('');
   const [adding, setAdding]   = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const [copied, setCopied]   = useState<string | null>(null);
 
   async function add() {
     if (!newName.trim()) return;
@@ -45,6 +46,18 @@ export default function TablesClient({ initialTables }: { initialTables: PosTabl
     });
     const data = await res.json();
     if (!data.error) setTables((t) => t.map((x) => x.id === id ? { ...x, name: data.name } : x));
+  }
+
+  function copyQRLink(token: string, tableId: string) {
+    const url = `${window.location.origin}/order/${token}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(tableId);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
+
+  function openQRLink(token: string) {
+    window.open(`/order/${token}`, '_blank');
   }
 
   return (
@@ -90,7 +103,28 @@ export default function TablesClient({ initialTables }: { initialTables: PosTabl
               }`}>
                 {t.status === 'occupied' ? 'Occupied' : 'Free'}
               </span>
-              <div className="mt-3 flex justify-center gap-2">
+
+              {/* QR ordering link */}
+              {t.qr_token && (
+                <div className="mt-2 flex justify-center gap-1">
+                  <button
+                    onClick={() => openQRLink(t.qr_token!)}
+                    title="Open customer order page"
+                    className="rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
+                  >
+                    🔗 Menu
+                  </button>
+                  <button
+                    onClick={() => copyQRLink(t.qr_token!, t.id)}
+                    title="Copy link for QR code"
+                    className="rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
+                  >
+                    {copied === t.id ? '✓ Copied' : 'Copy'}
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-2 flex justify-center gap-2">
                 <button onClick={() => rename(t.id, t.name)} className="text-xs text-neutral-400 hover:text-neutral-700">
                   Rename
                 </button>
@@ -105,6 +139,7 @@ export default function TablesClient({ initialTables }: { initialTables: PosTabl
 
       <p className="text-xs text-neutral-400">
         Table status (Free / Occupied) is updated automatically when orders are placed in POS.
+        Each table has a unique customer ordering URL — share it as a QR code at the table.
         Run migration 0044 in Supabase to activate table management.
       </p>
     </div>

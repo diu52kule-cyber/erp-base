@@ -40,6 +40,9 @@ export default async function POSPage() {
           <Link href="/dashboard/pos/tables" className="rounded-lg border border-neutral-200 px-4 py-2 text-sm hover:bg-neutral-50">
             Tables
           </Link>
+          <Link href="/dashboard/pos/qr-orders" className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-2 text-sm text-amber-700 hover:bg-amber-100">
+            QR Orders
+          </Link>
           <Link href="/dashboard/pos/sessions" className="rounded-lg border border-neutral-200 px-4 py-2 text-sm hover:bg-neutral-50">
             Session History
           </Link>
