@@ -6,6 +6,7 @@ import { EMPLOYMENT_TYPE_LABELS, ATTENDANCE_COLORS, ATTENDANCE_LABELS } from '@/
 import type { Employee, AttendanceRecord } from '@/lib/types/hr';
 import AttachmentPanel from '@/components/AttachmentPanel';
 import ArchiveButton from '@/components/ArchiveButton';
+import SelfServiceTokenButton from './SelfServiceTokenButton';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -47,6 +48,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
           <span className={`rounded-full px-3 py-1 text-xs font-medium ${emp.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-neutral-100 text-neutral-500'}`}>
             {emp.status === 'active' ? 'Active' : 'Inactive'}
           </span>
+          <SelfServiceTokenButton employeeId={emp.id} existingToken={(emp as any).self_service_token ?? null} />
           {(emp as any).archived_at ? (
             <ArchiveButton table="employees" id={emp.id} archived={true} redirectTo="/dashboard/hr" />
           ) : (

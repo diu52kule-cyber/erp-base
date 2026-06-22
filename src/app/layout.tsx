@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description:
     "Modular business management for Indian SMBs: billing, GST, POS, inventory, CRM, HR — plus a full startup workspace (docs, tasks, OKRs).",
   applicationName: "ERP Base",
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "ERP Base" },
   openGraph: {
     title: "ERP Base",
     description: "Run your whole business — and your whole team — in one place.",
