@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import TeamWorkspaceClient from './TeamWorkspaceClient';
+import TeamActivityFeed from './TeamActivityFeed';
 
 export default async function TeamWorkspacePage({ params }: { params: { id: string } }) {
   const ctx = await getOrgContext();
@@ -28,6 +29,28 @@ export default async function TeamWorkspacePage({ params }: { params: { id: stri
   const members = (orgMembers ?? []) as any[];
   const canManage = ['owner', 'admin', 'manager'].includes(ctx.org.role);
   const teamMemberIds = new Set((team.members ?? []).map((m: any) => m.user_id));
+
+  // Activity feed — recent audit_log rows from team members
+  const teamMemberIdList = [...teamMemberIds] as string[];
+  let activityLogs: any[] = [];
+  const memberEmails: Record<string, string> = {};
+  for (const m of members) {
+    const email = Array.isArray(m.email) ? m.email[0]?.email :
+                  typeof m.email === 'object' ? (m.email as any)?.email : m.email;
+    if (email) memberEmails[m.user_id] = email;
+  }
+  if (teamMemberIdList.length > 0) {
+    try {
+      const { data: logs } = await supabase
+        .from('audit_log')
+        .select('id, user_id, table_name, record_id, action, created_at')
+        .eq('org_id', ctx.org.id)
+        .in('user_id', teamMemberIdList)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      activityLogs = logs ?? [];
+    } catch { /* audit_log may not exist yet */ }
+  }
 
   return (
     <div className="space-y-6">
@@ -85,6 +108,18 @@ export default async function TeamWorkspacePage({ params }: { params: { id: stri
         canManage={canManage}
         currentUserId={ctx.user.id}
       />
+
+      {/* Activity feed */}
+      <div className="rounded-xl border border-neutral-200 bg-white p-5 space-y-3">
+        <h2 className="font-medium">Team Activity</h2>
+        <p className="text-xs text-neutral-400">Live feed — updates in real time as team members take actions.</p>
+        <TeamActivityFeed
+          orgId={ctx.org.id}
+          teamMemberIds={teamMemberIdList}
+          initialLogs={activityLogs}
+          memberEmails={memberEmails}
+        />
+      </div>
 
       {/* Quick links to workspace modules */}
       <div className="rounded-xl border border-neutral-200 bg-white p-5 space-y-3">

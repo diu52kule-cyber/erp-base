@@ -58,6 +58,9 @@ export default async function HRPage() {
           <Link href="/dashboard/hr/attendance" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
             Attendance
           </Link>
+          <a href="/api/hr/employees/export" download className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            Export CSV
+          </a>
           <Link href="/dashboard/hr/employees/new" className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">
             + Add Employee
           </Link>
