@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
@@ -76,9 +77,14 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Reports</h1>
-        <p className="mt-1 text-sm text-neutral-500">Business overview across all modules</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Reports</h1>
+          <p className="mt-1 text-sm text-neutral-500">Business overview across all modules</p>
+        </div>
+        <Link href="/dashboard/reports/custom" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+          Custom Reports
+        </Link>
       </div>
 
       {/* Billing */}
