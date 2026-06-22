@@ -140,6 +140,7 @@ export default async function AccountingPage() {
             { title: 'Journal Entries', desc: 'Manual double-entry bookkeeping.', href: '/dashboard/accounting/journals', badge: 'Ledger' },
             { title: 'Receivables Ageing', desc: 'Outstanding invoices bucketed by overdue period.', href: '/dashboard/accounting/ageing', badge: 'Collections' },
             { title: 'Opening Balances', desc: 'Set account opening balances for each financial year.', href: '/dashboard/accounting/opening-balances', badge: 'Setup' },
+            { title: 'Bank Reconciliation', desc: 'Import bank CSV and match against recorded payments.', href: '/dashboard/accounting/bank-reconciliation', badge: 'Reconcile' },
           ].map((r) => (
             <Link key={r.title} href={r.href}
               className="rounded-xl border border-neutral-200 bg-white p-5 hover:bg-neutral-50 transition-colors group space-y-2">
@@ -150,6 +151,26 @@ export default async function AccountingPage() {
               <p className="text-sm text-neutral-500">{r.desc}</p>
             </Link>
           ))}
+        </div>
+      </div>
+
+      {/* Tally Export */}
+      <div>
+        <h2 className="mb-3 font-semibold text-neutral-700">Integrations</h2>
+        <div className="rounded-xl border border-neutral-200 bg-white p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium">Tally XML Export</h3>
+              <p className="mt-0.5 text-sm text-neutral-500">Export all invoices as Tally-compatible sales vouchers. Import directly into Tally Prime / ERP 9.</p>
+            </div>
+            <a
+              href={`/api/accounting/tally-export?from=${start}&to=${end}`}
+              download
+              className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+            >
+              Export Tally XML (FY {fyLabel})
+            </a>
+          </div>
         </div>
       </div>
 
