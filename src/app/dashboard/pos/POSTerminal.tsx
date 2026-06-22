@@ -198,7 +198,29 @@ export default function POSTerminal({
     });
     const data = await res.json();
     if (data.error) { setError(data.error); setLoading(false); return; }
-    setLastOrder({ ...data, cart: [...cart], subtotal, gstAmount, billDiscAmt, total, tenders: [...tenders], tableLabel, customerName });
+
+    // Auto-earn loyalty points (1 pt per ₹10 spent) if customer is selected
+    let pointsEarned = 0;
+    if (customerId) {
+      pointsEarned = Math.floor(total / 10);
+      if (pointsEarned > 0) {
+        try {
+          await fetch('/api/loyalty', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contact_id: customerId,
+              points: pointsEarned,
+              type: 'earn',
+              reference_id: data.id,
+              reference_type: 'pos_order',
+            }),
+          });
+        } catch { /* loyalty not yet activated — silently skip */ }
+      }
+    }
+
+    setLastOrder({ ...data, cart: [...cart], subtotal, gstAmount, billDiscAmt, total, tenders: [...tenders], tableLabel, customerName, pointsEarned });
     clearCart(); setScreen('receipt'); setLoading(false);
   }
 
@@ -274,6 +296,11 @@ export default function POSTerminal({
           {lastOrder.isRefund && <p className="text-sm font-medium text-red-600">REFUND</p>}
           {lastOrder.tableLabel && <p className="text-sm text-neutral-500">Table: {lastOrder.tableLabel}</p>}
           {lastOrder.customerName && <p className="text-sm text-neutral-500">Customer: {lastOrder.customerName}</p>}
+          {lastOrder.pointsEarned > 0 && (
+            <p className="text-xs font-medium text-amber-700 bg-amber-50 rounded-lg px-3 py-1 inline-block">
+              +{lastOrder.pointsEarned} loyalty points earned
+            </p>
+          )}
           <div className="text-left rounded-xl bg-white border border-green-100 p-4 text-sm space-y-1">
             {lastOrder.cart.map((i: any, idx: number) => (
               <div key={idx} className="flex justify-between">

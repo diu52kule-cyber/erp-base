@@ -73,6 +73,12 @@ export default async function CRMPage() {
         </div>
         <div className="flex gap-2">
           <Link
+            href="/dashboard/crm/loyalty"
+            className="rounded-lg border border-neutral-200 px-4 py-2 text-sm hover:bg-neutral-50"
+          >
+            Loyalty
+          </Link>
+          <Link
             href="/dashboard/crm/deals/new"
             className="rounded-lg border border-neutral-200 px-4 py-2 text-sm hover:bg-neutral-50"
           >
