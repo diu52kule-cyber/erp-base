@@ -134,6 +134,7 @@ export default async function TeamWorkspacePage({ params }: { params: { id: stri
         <div className="flex flex-wrap gap-2">
           {[
             { label: 'Team Board', href: `/dashboard/teams/${params.id}/board`, icon: '🗂' },
+            { label: 'Calendar', href: `/dashboard/teams/${params.id}/calendar`, icon: '📅' },
             { label: 'Tasks', href: '/dashboard/tasks', icon: '✅' },
             { label: 'Docs', href: '/dashboard/docs', icon: '📚' },
             { label: 'Projects', href: '/dashboard/projects', icon: '📊' },
