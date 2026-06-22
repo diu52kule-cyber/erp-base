@@ -8,6 +8,7 @@ import {
   DEAL_STAGE_LABELS,
   DEAL_STAGE_COLORS,
   DEAL_STAGES,
+  STAGE_PROBABILITY,
 } from '@/lib/types/crm';
 import PageHotkeys from '@/components/PageHotkeys';
 import ContactsTable from './ContactsTable';
@@ -48,6 +49,15 @@ export default async function CRMPage() {
     .filter((d) => d.stage === 'won')
     .reduce((s, d) => s + Number(d.value), 0);
 
+  const weightedPipeline = dealList
+    .filter((d) => !['won', 'lost'].includes(d.stage))
+    .reduce((s, d) => s + Number(d.value) * (STAGE_PROBABILITY[d.stage] / 100), 0);
+
+  const winRate = dealList.filter((d) => ['won', 'lost'].includes(d.stage)).length > 0
+    ? Math.round((dealList.filter((d) => d.stage === 'won').length /
+        dealList.filter((d) => ['won', 'lost'].includes(d.stage)).length) * 100)
+    : null;
+
   const dealsByStage = DEAL_STAGES.reduce<Record<DealStage, Deal[]>>(
     (acc, s) => ({ ...acc, [s]: dealList.filter((d) => d.stage === s) }),
     {} as Record<DealStage, Deal[]>
@@ -78,16 +88,19 @@ export default async function CRMPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
         {[
           { label: 'Total Contacts', value: contactList.length },
           { label: 'Leads', value: totalLeads },
           { label: 'Customers', value: totalCustomers },
           { label: 'Open Pipeline', value: fmt(openPipeline) },
+          { label: 'Weighted Forecast', value: fmt(weightedPipeline), hint: 'value × stage probability' },
+          { label: 'Win Rate', value: winRate !== null ? `${winRate}%` : '—', hint: 'won / (won + lost)' },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-neutral-200 bg-white p-5">
             <p className="text-sm text-neutral-500">{s.label}</p>
             <p className="mt-1 text-2xl font-semibold">{s.value}</p>
+            {(s as any).hint && <p className="mt-0.5 text-xs text-neutral-400">{(s as any).hint}</p>}
           </div>
         ))}
       </div>

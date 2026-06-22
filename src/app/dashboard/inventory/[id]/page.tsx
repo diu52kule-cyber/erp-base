@@ -6,6 +6,7 @@ import type { Product, ProductBatch, StockMovement } from '@/lib/types/inventory
 import DeleteProductButton from './DeleteProductButton';
 import AddBatchForm from './AddBatchForm';
 import ArchiveButton from '@/components/ArchiveButton';
+import VariantsPanel from './VariantsPanel';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
@@ -172,6 +173,11 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
         )}
 
         <AddBatchForm productId={product.id} unit={product.unit} />
+      </div>
+
+      {/* Variants */}
+      <div className="rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800 p-6">
+        <VariantsPanel productId={product.id} parentPrice={product.selling_price} />
       </div>
 
       {/* Stock movement history */}

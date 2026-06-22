@@ -14,6 +14,14 @@ export const CONTACT_TYPE_COLORS: Record<ContactType, string> = {
 };
 
 export const DEAL_STAGES: DealStage[] = ['lead', 'contacted', 'proposal', 'negotiation', 'won', 'lost'];
+export const STAGE_PROBABILITY: Record<DealStage, number> = {
+  lead: 10,
+  contacted: 30,
+  proposal: 50,
+  negotiation: 70,
+  won: 100,
+  lost: 0,
+};
 export const DEAL_STAGE_LABELS: Record<DealStage, string> = {
   lead: 'New Lead',
   contacted: 'Contacted',

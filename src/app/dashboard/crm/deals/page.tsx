@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
-import { DEAL_STAGES, DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from '@/lib/types/crm';
+import { DEAL_STAGES, DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, STAGE_PROBABILITY } from '@/lib/types/crm';
 import type { Deal, DealStage } from '@/lib/types/crm';
 
 function fmt(n: number) {
@@ -49,10 +49,25 @@ export default async function DealsPage() {
           </Link>
         </div>
       ) : (
+        <>
+        {/* Forecast summary */}
+        {(() => {
+          const weighted = deals.filter(d => !['won','lost'].includes(d.stage))
+            .reduce((s, d) => s + Number(d.value) * (STAGE_PROBABILITY[d.stage] / 100), 0);
+          const wonVal = deals.filter(d => d.stage === 'won').reduce((s, d) => s + Number(d.value), 0);
+          return (
+            <div className="flex gap-4 rounded-xl border border-neutral-200 bg-white p-4 text-sm">
+              <div><span className="text-neutral-500">Weighted forecast </span><span className="font-semibold">{fmt(weighted)}</span></div>
+              <div className="text-neutral-200">|</div>
+              <div><span className="text-neutral-500">Won </span><span className="font-semibold text-green-700">{fmt(wonVal)}</span></div>
+            </div>
+          );
+        })()}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {DEAL_STAGES.map((stage) => {
             const col = byStage[stage] ?? [];
             const total = col.reduce((s, d) => s + Number(d.value), 0);
+            const prob  = STAGE_PROBABILITY[stage];
             return (
               <div key={stage} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -61,7 +76,10 @@ export default async function DealsPage() {
                   </span>
                   <span className="text-xs text-neutral-400">{col.length}</span>
                 </div>
-                <p className="text-xs font-semibold text-neutral-600">{fmt(total)}</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-xs font-semibold text-neutral-600">{fmt(total)}</p>
+                  <span className="text-xs text-neutral-400">{prob}%</span>
+                </div>
                 <div className="space-y-2">
                   {col.map((d) => (
                     <Link
@@ -87,6 +105,7 @@ export default async function DealsPage() {
             );
           })}
         </div>
+        </>
       )}
     </div>
   );
