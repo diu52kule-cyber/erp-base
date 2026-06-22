@@ -57,6 +57,9 @@ export default async function InventoryPage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Inventory</h1>
         <div className="flex items-center gap-2">
+          <Link href="/dashboard/inventory/transfers" className="rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            Transfers
+          </Link>
           <Link href="/dashboard/inventory/production" className="rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
             Production Orders
           </Link>
