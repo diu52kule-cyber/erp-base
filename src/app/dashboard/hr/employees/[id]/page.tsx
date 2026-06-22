@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { EMPLOYMENT_TYPE_LABELS, ATTENDANCE_COLORS, ATTENDANCE_LABELS } from '@/lib/types/hr';
 import type { Employee, AttendanceRecord } from '@/lib/types/hr';
 import AttachmentPanel from '@/components/AttachmentPanel';
+import ArchiveButton from '@/components/ArchiveButton';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -42,9 +43,16 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
             <span className="text-sm">{EMPLOYMENT_TYPE_LABELS[emp.employment_type]}</span>
           </p>
         </div>
-        <span className={`mt-8 rounded-full px-3 py-1 text-xs font-medium ${emp.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-neutral-100 text-neutral-500'}`}>
-          {emp.status === 'active' ? 'Active' : 'Inactive'}
-        </span>
+        <div className="mt-8 flex items-center gap-2">
+          <span className={`rounded-full px-3 py-1 text-xs font-medium ${emp.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-neutral-100 text-neutral-500'}`}>
+            {emp.status === 'active' ? 'Active' : 'Inactive'}
+          </span>
+          {(emp as any).archived_at ? (
+            <ArchiveButton table="employees" id={emp.id} archived={true} redirectTo="/dashboard/hr" />
+          ) : (
+            <ArchiveButton table="employees" id={emp.id} archived={false} redirectTo="/dashboard/hr" />
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

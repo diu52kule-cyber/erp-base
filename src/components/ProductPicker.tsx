@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-export type PickProduct = { id: string; name: string; sku?: string | null; unit_price: number; gst_rate: number };
+export type PickProduct = { id: string; name: string; sku?: string | null; unit_price: number; gst_rate: number; stock_qty?: number | null };
 
 // A line-item description input with product autocomplete. Typing filters the
 // catalog; picking a product fills description/price/GST. Free text still allowed.

@@ -4,6 +4,7 @@ import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import KanbanBoard from './KanbanBoard';
 import TimePanel from './TimePanel';
+import Comments from '@/components/Comments';
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const ctx = await getOrgContext();
@@ -46,6 +47,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
       <KanbanBoard projectId={id} initialTasks={tasks ?? []} />
       <TimePanel projectId={id} initialEntries={time ?? []} tasks={tasks ?? []} />
+      <Comments entityType="project" entityId={id} currentUserId={ctx.user.id} />
     </div>
   );
 }

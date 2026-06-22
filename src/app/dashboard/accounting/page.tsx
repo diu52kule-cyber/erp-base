@@ -108,48 +108,64 @@ export default async function AccountingPage() {
         ))}
       </div>
 
-      {/* Reports */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">GSTR-1</h2>
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">Outward Supplies</span>
-          </div>
-          <p className="text-sm text-neutral-500">Statement of outward supplies. File monthly or quarterly with the GST portal.</p>
-          <div className="flex gap-2">
-            <Link href={`/dashboard/accounting/gstr1?period=${curMonth}`}
-              className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">
-              View GSTR-1
-            </Link>
-          </div>
+      {/* GST Reports */}
+      <div>
+        <h2 className="mb-3 font-semibold text-neutral-700">GST Returns</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[
+            { title: 'GSTR-1', desc: 'Outward supplies — file monthly or quarterly.', badge: 'Outward Supplies', badgeColor: 'bg-blue-50 text-blue-700', href: `/dashboard/accounting/gstr1?period=${curMonth}`, label: 'View GSTR-1' },
+            { title: 'GSTR-2 (ITC)', desc: 'Input tax credit from vendor bills.', badge: 'Inward Supplies', badgeColor: 'bg-purple-50 text-purple-700', href: `/dashboard/accounting/gstr2?period=${curMonth}`, label: 'View GSTR-2' },
+            { title: 'GSTR-3B', desc: 'Summary return — pay tax monthly.', badge: 'Tax Payable', badgeColor: 'bg-green-50 text-green-700', href: `/dashboard/accounting/gstr3b?period=${curMonth}`, label: 'View GSTR-3B' },
+          ].map((r) => (
+            <div key={r.title} className="rounded-xl border border-neutral-200 bg-white p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">{r.title}</h3>
+                <span className={`rounded-full px-2 py-0.5 text-xs ${r.badgeColor}`}>{r.badge}</span>
+              </div>
+              <p className="text-sm text-neutral-500">{r.desc}</p>
+              <Link href={r.href} className="inline-block rounded-lg bg-neutral-900 px-3 py-1.5 text-xs text-white hover:bg-neutral-700">{r.label}</Link>
+            </div>
+          ))}
         </div>
+      </div>
 
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">GSTR-2 (Purchases / ITC)</h2>
-            <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700">Inward Supplies</span>
-          </div>
-          <p className="text-sm text-neutral-500">Input tax credit from vendor bills — supplier-wise B2B & unregistered.</p>
-          <div className="flex gap-2">
-            <Link href={`/dashboard/accounting/gstr2?period=${curMonth}`}
-              className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">
-              View GSTR-2
+      {/* Financial Reports */}
+      <div>
+        <h2 className="mb-3 font-semibold text-neutral-700">Financial Statements</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { title: 'Trial Balance', desc: 'All account balances — Dr / Cr totals.', href: '/dashboard/accounting/trial-balance', badge: 'Double Entry' },
+            { title: 'P&L Statement', desc: 'Revenue, expenses, and net profit.', href: '/dashboard/accounting/pnl', badge: 'Income' },
+            { title: 'Balance Sheet', desc: 'Assets, liabilities, and equity snapshot.', href: '/dashboard/accounting/balance-sheet', badge: 'Position' },
+            { title: 'Journal Entries', desc: 'Manual double-entry bookkeeping.', href: '/dashboard/accounting/journals', badge: 'Ledger' },
+            { title: 'Receivables Ageing', desc: 'Outstanding invoices bucketed by overdue period.', href: '/dashboard/accounting/ageing', badge: 'Collections' },
+          ].map((r) => (
+            <Link key={r.title} href={r.href}
+              className="rounded-xl border border-neutral-200 bg-white p-5 hover:bg-neutral-50 transition-colors group space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium group-hover:text-neutral-900">{r.title}</h3>
+                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">{r.badge}</span>
+              </div>
+              <p className="text-sm text-neutral-500">{r.desc}</p>
             </Link>
-          </div>
+          ))}
         </div>
+      </div>
 
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">GSTR-3B</h2>
-            <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">Tax Payable</span>
-          </div>
-          <p className="text-sm text-neutral-500">Summary return of outward and inward supplies. File monthly to pay tax.</p>
-          <div className="flex gap-2">
-            <Link href={`/dashboard/accounting/gstr3b?period=${curMonth}`}
-              className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">
-              View GSTR-3B
+      {/* TDS */}
+      <div>
+        <h2 className="mb-3 font-semibold text-neutral-700">TDS</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {[
+            { title: 'TDS Payable', desc: 'TDS you deducted from vendor/contractor payments — track & deposit.', href: '/dashboard/accounting/tds?type=payable' },
+            { title: 'TDS Receivable', desc: 'TDS deducted from your receipts by customers — claim as credit.', href: '/dashboard/accounting/tds?type=receivable' },
+          ].map((r) => (
+            <Link key={r.title} href={r.href}
+              className="rounded-xl border border-neutral-200 bg-white p-5 hover:bg-neutral-50 transition-colors group space-y-2">
+              <h3 className="font-medium group-hover:text-neutral-900">{r.title}</h3>
+              <p className="text-sm text-neutral-500">{r.desc}</p>
             </Link>
-          </div>
+          ))}
         </div>
       </div>
     </div>

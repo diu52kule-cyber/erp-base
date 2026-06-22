@@ -43,6 +43,14 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
   if (invite.accepted_at)  return NextResponse.json({ error: 'Invite already accepted' }, { status: 410 });
   if (new Date(invite.expires_at) < new Date()) return NextResponse.json({ error: 'Invite has expired' }, { status: 410 });
 
+  // Email-match guard: invite must match the logged-in account
+  if (invite.email && ctx.user.email && ctx.user.email.toLowerCase() !== invite.email.toLowerCase()) {
+    return NextResponse.json(
+      { error: `This invite was sent to ${invite.email}. Sign in with that account to accept it.` },
+      { status: 403 },
+    );
+  }
+
   // Check not already a member
   const { data: existingMember } = await supabase
     .from('memberships')

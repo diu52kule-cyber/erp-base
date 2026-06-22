@@ -2,12 +2,13 @@ import Link from "next/link";
 import { getOrgContext } from "@/lib/entitlements";
 import { createClient } from "@/lib/supabase/server";
 import { MODULES, quickActionsFor } from "@/lib/modules";
+import DashboardFilters from "./DashboardFilters";
 
 export const dynamic = "force-dynamic";
 
 function fmt(n: number) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 0 }); }
 
-export default async function DashboardHome() {
+export default async function DashboardHome({ searchParams }: { searchParams: { from_date?: string; to_date?: string } }) {
   const ctx = await getOrgContext();
   if (!ctx?.org) {
     return <div className="text-neutral-500">Loading…</div>;
@@ -16,11 +17,18 @@ export default async function DashboardHome() {
   const supabase = createClient();
   const orgId = ctx.org.id;
   const has = (k: string) => ctx.enabledModules.has(k);
+  const fromDate = searchParams.from_date ?? '';
+  const toDate   = searchParams.to_date ?? '';
 
   // Fetch only the KPIs relevant to this org's enabled modules, in parallel.
   const [invoices, productCount, contactCount, employeeCount, ledger] = await Promise.all([
     has("billing")
-      ? supabase.from("invoices").select("total,status").eq("org_id", orgId)
+      ? (() => {
+          let q = supabase.from("invoices").select("total,status").eq("org_id", orgId).eq("doc_type", "invoice");
+          if (fromDate) q = q.gte("issue_date", fromDate);
+          if (toDate)   q = q.lte("issue_date", toDate);
+          return q;
+        })()
       : Promise.resolve({ data: null }),
     has("inventory")
       ? supabase.from("products").select("id", { count: "exact", head: true }).eq("org_id", orgId)
@@ -75,13 +83,21 @@ export default async function DashboardHome() {
         </p>
       </div>
 
+      {/* Date-range filter (KPI period) */}
+      {kpis.length > 0 && (
+        <DashboardFilters fromDate={fromDate} toDate={toDate} />
+      )}
+
       {/* KPIs */}
       {kpis.length > 0 && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {kpis.map((k) => (
             <Link key={k.label} href={k.href}
               className="rounded-xl border border-neutral-200 bg-white p-4 hover:border-neutral-300 transition-colors">
-              <p className="text-xs text-neutral-400">{k.label}</p>
+              <p className="text-xs text-neutral-400">
+                {k.label}
+                {(fromDate || toDate) && <span className="ml-1 text-neutral-300">(filtered)</span>}
+              </p>
               <p className={`mt-1 text-2xl font-semibold ${k.accent ?? ""}`}>{k.value}</p>
             </Link>
           ))}

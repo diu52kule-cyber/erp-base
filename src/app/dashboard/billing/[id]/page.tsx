@@ -12,6 +12,7 @@ import InvoiceActions from './InvoiceActions';
 import AutoPrint from './AutoPrint';
 import AttachmentPanel from '@/components/AttachmentPanel';
 import PrintButton from '@/components/PrintButton';
+import Comments from '@/components/Comments';
 
 const STATUS_STYLES: Record<InvoiceStatus, string> = {
   draft: 'bg-neutral-100 text-neutral-600',
@@ -253,6 +254,11 @@ export default async function InvoiceDetailPage({
       {/* Attachments (not printed) */}
       <div className="no-print rounded-xl border border-neutral-200 bg-white p-6">
         <AttachmentPanel entityType="invoice" entityId={invoice.id} />
+      </div>
+
+      {/* Comments */}
+      <div className="no-print">
+        <Comments entityType="invoice" entityId={invoice.id} currentUserId={ctx.user.id} />
       </div>
     </div>
   );

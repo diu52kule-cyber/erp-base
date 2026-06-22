@@ -13,11 +13,26 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: {
   const docType: DocType = isDocType(searchParams.type) ? searchParams.type : 'invoice';
 
   const supabase = createClient();
-  const [{ data: products }, { data: contacts }, { data: settings }] = await Promise.all([
-    supabase.from('products').select('id,name,sku,unit_price:selling_price,gst_rate').eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
-    supabase.from('contacts').select('id,name,company,email,gstin,address').eq('org_id', ctx.org.id).order('name'),
+  const [{ data: products }, { data: contacts }, { data: settings }, { data: outstanding }] = await Promise.all([
+    supabase.from('products').select('id,name,sku,unit_price:selling_price,gst_rate,stock_qty').eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
+    supabase.from('contacts').select('id,name,company,email,gstin,address,credit_limit').eq('org_id', ctx.org.id).order('name'),
     supabase.from('org_invoice_settings').select('default_due_days,default_terms,default_notes,enable_round_off').eq('org_id', ctx.org.id).maybeSingle(),
+    // outstanding balance per contact: sum of (total - amount_paid) for unpaid invoices
+    supabase.from('invoices').select('customer_id,total,amount_paid')
+      .eq('org_id', ctx.org.id).eq('doc_type', 'invoice')
+      .not('status', 'in', '("paid","cancelled","draft")'),
   ]);
+
+  // Roll up outstanding per contact_id
+  const outstandingMap: Record<string, number> = {};
+  for (const row of outstanding ?? []) {
+    if (!row.customer_id) continue;
+    outstandingMap[row.customer_id] = (outstandingMap[row.customer_id] ?? 0) + Math.max(0, (row.total ?? 0) - (row.amount_paid ?? 0));
+  }
+  const contactsWithBalance = (contacts ?? []).map((c) => ({
+    ...c,
+    outstanding: outstandingMap[c.id] ?? 0,
+  }));
 
   return (
     <div className="space-y-4">
@@ -33,7 +48,7 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: {
         defaultNotes={settings?.default_notes ?? ''}
         roundOffDefault={settings?.enable_round_off ?? true}
         products={(products ?? []) as never}
-        contacts={(contacts ?? []) as never}
+        contacts={contactsWithBalance as never}
       />
     </div>
   );

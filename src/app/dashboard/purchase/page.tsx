@@ -2,9 +2,10 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
-import { PO_STATUS_LABELS, PO_STATUS_COLORS, BILL_STATUS_LABELS, BILL_STATUS_COLORS } from '@/lib/types/purchase';
+import { BILL_STATUS_LABELS, BILL_STATUS_COLORS } from '@/lib/types/purchase';
 import type { PurchaseOrder, VendorBill } from '@/lib/types/purchase';
 import PageHotkeys from '@/components/PageHotkeys';
+import POListClient from './POListClient';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n ?? 0);
@@ -73,38 +74,7 @@ export default async function PurchasePage() {
           </Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50 text-xs text-neutral-500">
-                <th className="px-4 py-3 text-left font-medium">PO Number</th>
-                <th className="px-4 py-3 text-left font-medium">Vendor</th>
-                <th className="px-4 py-3 text-left font-medium">Status</th>
-                <th className="px-4 py-3 text-left font-medium">Issue Date</th>
-                <th className="px-4 py-3 text-left font-medium">Expected</th>
-                <th className="px-4 py-3 text-right font-medium">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {poList.map((po) => (
-                <tr key={po.id} className="hover:bg-neutral-50">
-                  <td className="px-4 py-3">
-                    <Link href={`/dashboard/purchase/${po.id}`} className="font-mono font-medium hover:underline">{po.po_number}</Link>
-                  </td>
-                  <td className="px-4 py-3">{po.vendor_name}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PO_STATUS_COLORS[po.status]}`}>
-                      {PO_STATUS_LABELS[po.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-500">{po.issue_date}</td>
-                  <td className="px-4 py-3 text-neutral-500">{po.expected_delivery ?? '—'}</td>
-                  <td className="px-4 py-3 text-right font-medium">{fmt(po.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <POListClient orders={poList} />
       )}
 
       {/* Recent vendor bills */}

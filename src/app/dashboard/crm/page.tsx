@@ -10,6 +10,7 @@ import {
   DEAL_STAGES,
 } from '@/lib/types/crm';
 import PageHotkeys from '@/components/PageHotkeys';
+import ContactsTable from './ContactsTable';
 import type { Contact, Deal, DealStage } from '@/lib/types/crm';
 
 function fmt(n: number) {
@@ -150,43 +151,7 @@ export default async function CRMPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-100 bg-neutral-50 text-xs text-neutral-500">
-                  <th className="px-4 py-3 text-left font-medium">Name</th>
-                  <th className="px-4 py-3 text-left font-medium">Company</th>
-                  <th className="px-4 py-3 text-left font-medium">Type</th>
-                  <th className="px-4 py-3 text-left font-medium">Email / Phone</th>
-                  <th className="px-4 py-3 text-left font-medium">Deals</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {contactList.map((c) => {
-                  const cDeals = dealList.filter((d) => d.contact_id === c.id);
-                  return (
-                    <tr key={c.id} className="hover:bg-neutral-50">
-                      <td className="px-4 py-3">
-                        <Link href={`/dashboard/crm/contacts/${c.id}`} className="font-medium hover:underline">
-                          {c.name}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-neutral-500">{c.company ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CONTACT_TYPE_COLORS[c.type]}`}>
-                          {CONTACT_TYPE_LABELS[c.type]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-neutral-500">
-                        {c.email ?? c.phone ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-500">{cDeals.length}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ContactsTable contacts={contactList} deals={dealList} />
         )}
       </div>
 

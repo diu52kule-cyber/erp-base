@@ -18,6 +18,7 @@ type LineItem = {
   unit_price: number;
   gst_rate: number;
   discount_pct: number;
+  stock_qty?: number | null;
 };
 
 export type InvoiceFormInitial = {
@@ -65,7 +66,7 @@ type Props = {
 const today = () => new Date().toISOString().split('T')[0];
 
 const emptyItem = (gst = 18): LineItem => ({
-  description: '', hsn_code: '', quantity: 1, unit_price: 0, gst_rate: gst, discount_pct: 0,
+  description: '', hsn_code: '', quantity: 1, unit_price: 0, gst_rate: gst, discount_pct: 0, stock_qty: null,
 });
 
 function initialItems(initial: InvoiceFormInitial | undefined, gst: number): LineItem[] {
@@ -94,6 +95,7 @@ export default function InvoiceForm({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(initial?.customer_id ?? null);
+  const [contactCredit, setContactCredit] = useState<{ limit: number; outstanding: number } | null>(null);
 
   const [form, setForm] = useState({
     customer_name: initial?.customer_name ?? '',
@@ -229,6 +231,18 @@ export default function InvoiceForm({
   return (
     <div className="space-y-6">
       {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {contactCredit && (() => {
+        const remaining = contactCredit.limit - contactCredit.outstanding;
+        const overLimit = totals.total > remaining;
+        return (
+          <div className={`rounded-lg px-4 py-3 text-sm ${overLimit ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+            {overLimit
+              ? `Credit limit exceeded — outstanding ₹${contactCredit.outstanding.toLocaleString('en-IN')} + this invoice ₹${Math.round(totals.total).toLocaleString('en-IN')} exceeds limit of ₹${contactCredit.limit.toLocaleString('en-IN')}`
+              : `Credit limit: ₹${contactCredit.limit.toLocaleString('en-IN')} · Outstanding: ₹${contactCredit.outstanding.toLocaleString('en-IN')} · Available: ₹${remaining.toLocaleString('en-IN')}`
+            }
+          </div>
+        );
+      })()}
       {draftRestored && (
         <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
           <span>Restored your unsaved {cfg.short.toLowerCase()} draft.</span>
@@ -256,6 +270,11 @@ export default function InvoiceForm({
                   billing_address: c.address ?? f.billing_address,
                   place_of_supply: c.gstin && /^\d{2}/.test(c.gstin) ? c.gstin.slice(0, 2) : f.place_of_supply,
                 }));
+                if (c.credit_limit && c.credit_limit > 0) {
+                  setContactCredit({ limit: c.credit_limit, outstanding: c.outstanding ?? 0 });
+                } else {
+                  setContactCredit(null);
+                }
               }}
               placeholder="Search a customer or type a new name" />
             {customerId && isInvoice && <p className="mt-1 text-xs text-green-600">● Linked to customer — will post to their ledger</p>}
@@ -325,23 +344,35 @@ export default function InvoiceForm({
           <div className="hidden grid-cols-[1fr_80px_64px_96px_64px_80px_96px_28px] gap-2 text-xs text-neutral-500 sm:grid">
             <span>Description</span><span>HSN/SAC</span><span>Qty</span><span>Rate</span><span>Disc %</span><span>GST %</span><span className="text-right">Amount</span><span />
           </div>
-          {items.map((item, index) => (
-            <div key={index} className="grid grid-cols-[1fr_80px_64px_96px_64px_80px_96px_28px] items-center gap-2">
-              <ProductPicker value={item.description} products={products}
-                onChange={(v) => updateItem(index, 'description', v)}
-                onPick={(p) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate } : it))}
-                placeholder="Item description" />
-              <input type="text" value={item.hsn_code} onChange={(e) => updateItem(index, 'hsn_code', e.target.value.replace(/\D/g, ''))} placeholder="9983" maxLength={8} className="rounded-lg border border-neutral-200 px-2 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-              <input type="number" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)} min="0" step="0.001" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-              <input type="number" value={item.unit_price} onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)} min="0" step="0.01" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-              <input type="number" value={item.discount_pct} onChange={(e) => updateItem(index, 'discount_pct', Math.min(100, parseFloat(e.target.value) || 0))} min="0" max="100" step="0.01" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-              <select value={item.gst_rate} onChange={(e) => updateItem(index, 'gst_rate', parseInt(e.target.value))} className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900">
-                {GST_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
-              </select>
-              <div className="text-right text-sm font-medium">{money(totals.lines[index]?.amount ?? 0)}</div>
-              <button type="button" onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))} disabled={items.length === 1} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30" aria-label="Remove item">×</button>
-            </div>
-          ))}
+          {items.map((item, index) => {
+            const stockWarn = item.stock_qty != null && item.quantity > item.stock_qty;
+            return (
+              <div key={index} className="space-y-1">
+                <div className="grid grid-cols-[1fr_80px_64px_96px_64px_80px_96px_28px] items-center gap-2">
+                  <ProductPicker value={item.description} products={products}
+                    onChange={(v) => updateItem(index, 'description', v)}
+                    onPick={(p) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate, stock_qty: p.stock_qty ?? null } : it))}
+                    placeholder="Item description" />
+                  <input type="text" value={item.hsn_code} onChange={(e) => updateItem(index, 'hsn_code', e.target.value.replace(/\D/g, ''))} placeholder="9983" maxLength={8} className="rounded-lg border border-neutral-200 px-2 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+                  <div>
+                    <input type="number" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)} min="0" step="0.001" className={`w-full rounded-lg border px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 ${stockWarn ? 'border-amber-400' : 'border-neutral-200'}`} />
+                  </div>
+                  <input type="number" value={item.unit_price} onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)} min="0" step="0.01" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+                  <input type="number" value={item.discount_pct} onChange={(e) => updateItem(index, 'discount_pct', Math.min(100, parseFloat(e.target.value) || 0))} min="0" max="100" step="0.01" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+                  <select value={item.gst_rate} onChange={(e) => updateItem(index, 'gst_rate', parseInt(e.target.value))} className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900">
+                    {GST_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
+                  </select>
+                  <div className="text-right text-sm font-medium">{money(totals.lines[index]?.amount ?? 0)}</div>
+                  <button type="button" onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))} disabled={items.length === 1} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30" aria-label="Remove item">×</button>
+                </div>
+                {stockWarn && (
+                  <p className="text-xs text-amber-600 col-span-full">
+                    ⚠ Only {item.stock_qty} in stock — qty {item.quantity} may cause a shortfall
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
         <button type="button" onClick={() => setItems((prev) => [...prev, emptyItem(defaultGst)])} className="mt-3 text-sm text-neutral-500 hover:text-neutral-900">+ Add line item</button>
 

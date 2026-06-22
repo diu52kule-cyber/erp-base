@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from '@/lib/types/crm';
 import type { Deal } from '@/lib/types/crm';
 import StageButton from './StageButton';
+import Comments from '@/components/Comments';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -74,6 +75,8 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
           <p className="text-sm text-neutral-700 whitespace-pre-line">{deal.notes}</p>
         </div>
       )}
+
+      <Comments entityType="deal" entityId={deal.id} currentUserId={ctx.user.id} />
     </div>
   );
 }

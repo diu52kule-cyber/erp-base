@@ -10,6 +10,7 @@ import {
 } from '@/lib/types/crm';
 import type { Contact, Deal } from '@/lib/types/crm';
 import ActivityTimeline from './ActivityTimeline';
+import ArchiveButton from '@/components/ArchiveButton';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -113,6 +114,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           >
             + New Deal
           </Link>
+          <ArchiveButton table="contacts" id={id} archived={!!(c as any).archived_at} redirectTo="/dashboard/crm" />
         </div>
       </div>
 

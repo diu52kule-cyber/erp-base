@@ -63,6 +63,10 @@ export default function InvoiceActions({
     <div className="flex flex-wrap items-center gap-2">
       <a href={`/api/invoices/${invoiceId}/pdf`} target="_blank" rel="noopener noreferrer" className={btn}>Download PDF</a>
       {hasEmail && <button onClick={sendEmail} disabled={busy} className={btn}>Email</button>}
+      {isInvoice && ['sent', 'partial'].includes(status) && (
+        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/pay/${invoiceId}`); toast('Payment link copied!'); }}
+          className={btn}>Copy Pay Link</button>
+      )}
       {status !== 'cancelled' && (
         <a href={`/dashboard/billing/${invoiceId}/edit`} className={btn}>Edit</a>
       )}

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-export type PickContact = { id: string; name: string; company?: string | null; email?: string | null; gstin?: string | null; address?: string | null };
+export type PickContact = { id: string; name: string; company?: string | null; email?: string | null; gstin?: string | null; address?: string | null; credit_limit?: number | null; outstanding?: number | null };
 
 // Customer/contact autocomplete. Typing filters the CRM contacts; picking one
 // links the record (customer_id) and fills name/email/GSTIN/address.

@@ -25,17 +25,18 @@ export const MODULES: ModuleDef[] = [
   { key: "import",        name: "Data Import",           href: "/dashboard/import",        icon: "⬆️", category: "business" },
 
   // ── Workspace / Startup OS ──
-  { key: "projects",  name: "Projects",         href: "/dashboard/projects",  icon: "📊", category: "workspace" },
-  { key: "docs",      name: "Docs & Knowledge", href: "/dashboard/docs",      icon: "📚", category: "workspace" },
-  { key: "tasks",     name: "Tasks & Sprints",  href: "/dashboard/tasks",     icon: "✅", category: "workspace" },
-  { key: "goals",     name: "Goals & OKRs",     href: "/dashboard/goals",     icon: "🎯", category: "workspace" },
-  { key: "features",  name: "Product Pipeline", href: "/dashboard/features",  icon: "🚀", category: "workspace" },
-  { key: "meetings",  name: "Meetings",         href: "/dashboard/meetings",  icon: "📝", category: "workspace" },
-  { key: "issues",    name: "Issues & Bugs",    href: "/dashboard/issues",    icon: "🐞", category: "workspace" },
-  { key: "releases",  name: "Releases",         href: "/dashboard/releases",  icon: "🏷️", category: "workspace" },
-  { key: "decisions", name: "Decision Log",     href: "/dashboard/decisions", icon: "⚖️", category: "workspace" },
-  { key: "checkins",  name: "Daily Check-ins",  href: "/dashboard/checkins",  icon: "☀️", category: "workspace" },
-  { key: "assistant", name: "AI Assistant",     href: "/dashboard/assistant", icon: "✨", category: "workspace" },
+  { key: "projects",  name: "Projects",            href: "/dashboard/projects",  icon: "📊", category: "workspace" },
+  { key: "docs",      name: "Docs & Knowledge",    href: "/dashboard/docs",      icon: "📚", category: "workspace" },
+  { key: "tasks",     name: "Tasks & Sprints",     href: "/dashboard/tasks",     icon: "✅", category: "workspace" },
+  { key: "goals",     name: "Goals & OKRs",        href: "/dashboard/goals",     icon: "🎯", category: "workspace" },
+  { key: "features",  name: "Product Pipeline",    href: "/dashboard/features",  icon: "🚀", category: "workspace" },
+  { key: "meetings",  name: "Meetings",            href: "/dashboard/meetings",  icon: "📝", category: "workspace" },
+  { key: "issues",    name: "Issues & Bugs",       href: "/dashboard/issues",    icon: "🐞", category: "workspace" },
+  { key: "releases",  name: "Releases",            href: "/dashboard/releases",  icon: "🏷️", category: "workspace" },
+  { key: "decisions", name: "Decision Log",        href: "/dashboard/decisions", icon: "⚖️", category: "workspace" },
+  { key: "checkins",  name: "Daily Check-ins",     href: "/dashboard/checkins",  icon: "☀️", category: "workspace" },
+  { key: "assistant", name: "AI Assistant",        href: "/dashboard/assistant", icon: "✨", category: "workspace" },
+  { key: "teams",     name: "Teams",               href: "/dashboard/teams",     icon: "🏢", category: "workspace" },
 ];
 
 export const ALL_MODULE_KEYS = MODULES.map((m) => m.key);
@@ -48,8 +49,7 @@ export const CATEGORY_LABELS: Record<ModuleCategory, string> = {
 };
 
 // Smart presets: which modules are enabled by default for each business type.
-// (Admin can always toggle more on per-client from the admin panel.)
-const TEAM_BASICS = ["docs", "tasks", "checkins"]; // light collaboration for any team
+const TEAM_BASICS = ["docs", "tasks", "checkins", "teams"];
 
 export const BUSINESS_PRESETS: Record<string, string[]> = {
   cafe:         ["billing", "payments", "ledger", "pos", "inventory", "purchase", "expenses", "accounting", "reports", ...TEAM_BASICS],
@@ -57,81 +57,79 @@ export const BUSINESS_PRESETS: Record<string, string[]> = {
   distributor:  ["billing", "payments", "ledger", "pos", "inventory", "purchase", "crm", "accounting", "reports", "import", ...TEAM_BASICS],
   manufacturer: ["billing", "payments", "ledger", "pos", "inventory", "purchase", "accounting", "reports", "import", "projects", ...TEAM_BASICS],
   freelancer:   ["billing", "payments", "pos", "projects", "expenses", "crm", "accounting", "reports",
-                 "docs", "tasks", "goals", "meetings", "decisions", "checkins", "assistant"],
+                 "docs", "tasks", "goals", "meetings", "decisions", "checkins", "assistant", "teams"],
   startup:      ["billing", "payments", "pos", "crm", "hr", "subscriptions", "projects", "expenses", "accounting", "reports",
                  ...WORKSPACE_MODULE_KEYS],
   mall:         ["billing", "payments", "ledger", "pos", "inventory", "purchase", "hr", "accounting", "reports", "import", ...TEAM_BASICS],
   general:      ALL_MODULE_KEYS,
 };
 
-// Shared business-type catalog (used by onboarding + the in-app switcher).
 export type BusinessType = { key: string; label: string; icon: string; desc: string };
 export const BUSINESS_TYPES: BusinessType[] = [
-  { key: "cafe",         label: "Cafe / Restaurant",     icon: "☕",  desc: "Billing, POS, inventory" },
-  { key: "shop",         label: "Retail Shop",           icon: "🛍️", desc: "POS, inventory, billing" },
+  { key: "cafe",         label: "Cafe / Restaurant",      icon: "☕",  desc: "Billing, POS, inventory" },
+  { key: "shop",         label: "Retail Shop",            icon: "🛍️", desc: "POS, inventory, billing" },
   { key: "distributor",  label: "Distributor / Wholesale", icon: "🚚", desc: "Inventory, purchase, ledgers" },
-  { key: "manufacturer", label: "Manufacturer",          icon: "🏭", desc: "Production, inventory, purchase" },
-  { key: "freelancer",   label: "Freelancer / Agency",   icon: "💻", desc: "Projects, invoicing, expenses" },
-  { key: "startup",      label: "Startup",               icon: "🚀", desc: "CRM, HR, workspace" },
-  { key: "mall",         label: "Mall / Multi-outlet",   icon: "🏪", desc: "Multi-location POS" },
-  { key: "general",      label: "General Business",      icon: "🏢", desc: "Full suite" },
+  { key: "manufacturer", label: "Manufacturer",           icon: "🏭", desc: "Production, inventory, purchase" },
+  { key: "freelancer",   label: "Freelancer / Agency",    icon: "💻", desc: "Projects, invoicing, expenses" },
+  { key: "startup",      label: "Startup",                icon: "🚀", desc: "CRM, HR, workspace" },
+  { key: "mall",         label: "Mall / Multi-outlet",    icon: "🏪", desc: "Multi-location POS" },
+  { key: "general",      label: "General Business",       icon: "🏢", desc: "Full suite" },
 ];
 
 export function presetFor(businessType: string | null | undefined): string[] {
   return BUSINESS_PRESETS[businessType ?? "general"] ?? ALL_MODULE_KEYS;
 }
 
-// Quick actions surfaced on the tailored dashboard home, per business type.
 export type QuickAction = { label: string; href: string; icon: string };
 
 export const BUSINESS_QUICK_ACTIONS: Record<string, QuickAction[]> = {
   cafe: [
-    { label: "Open POS register", href: "/dashboard/pos", icon: "🛒" },
-    { label: "Add a product", href: "/dashboard/inventory/new", icon: "📦" },
-    { label: "New invoice", href: "/dashboard/billing/new", icon: "🧾" },
-    { label: "Daily check-in", href: "/dashboard/checkins", icon: "☀️" },
+    { label: "Open POS register", href: "/dashboard/pos",          icon: "🛒" },
+    { label: "Add a product",     href: "/dashboard/inventory/new", icon: "📦" },
+    { label: "New invoice",       href: "/dashboard/billing/new",   icon: "🧾" },
+    { label: "Daily check-in",    href: "/dashboard/checkins",      icon: "☀️" },
   ],
   shop: [
-    { label: "Open POS register", href: "/dashboard/pos", icon: "🛒" },
-    { label: "Add a product", href: "/dashboard/inventory/new", icon: "📦" },
-    { label: "New purchase order", href: "/dashboard/purchase/new", icon: "📥" },
-    { label: "Add a customer", href: "/dashboard/crm/contacts/new", icon: "🤝" },
+    { label: "Open POS register",  href: "/dashboard/pos",              icon: "🛒" },
+    { label: "Add a product",      href: "/dashboard/inventory/new",     icon: "📦" },
+    { label: "New purchase order", href: "/dashboard/purchase/new",      icon: "📥" },
+    { label: "Add a customer",     href: "/dashboard/crm/contacts/new",  icon: "🤝" },
   ],
   freelancer: [
-    { label: "New invoice", href: "/dashboard/billing/new", icon: "🧾" },
-    { label: "New task", href: "/dashboard/tasks", icon: "✅" },
-    { label: "Write a doc", href: "/dashboard/docs", icon: "📚" },
-    { label: "Daily check-in", href: "/dashboard/checkins", icon: "☀️" },
+    { label: "New invoice",    href: "/dashboard/billing/new", icon: "🧾" },
+    { label: "New task",       href: "/dashboard/tasks",        icon: "✅" },
+    { label: "Write a doc",    href: "/dashboard/docs",         icon: "📚" },
+    { label: "Daily check-in", href: "/dashboard/checkins",     icon: "☀️" },
   ],
   startup: [
-    { label: "New task", href: "/dashboard/tasks", icon: "✅" },
-    { label: "Set a goal", href: "/dashboard/goals", icon: "🎯" },
-    { label: "Log a meeting", href: "/dashboard/meetings", icon: "📝" },
-    { label: "Ask AI", href: "/dashboard/assistant", icon: "✨" },
+    { label: "New task",      href: "/dashboard/tasks",     icon: "✅" },
+    { label: "Set a goal",    href: "/dashboard/goals",     icon: "🎯" },
+    { label: "Log a meeting", href: "/dashboard/meetings",  icon: "📝" },
+    { label: "Ask AI",        href: "/dashboard/assistant", icon: "✨" },
   ],
   mall: [
-    { label: "Open POS register", href: "/dashboard/pos", icon: "🛒" },
-    { label: "New purchase order", href: "/dashboard/purchase/new", icon: "📥" },
-    { label: "Add an employee", href: "/dashboard/hr/employees/new", icon: "👥" },
-    { label: "Daily check-in", href: "/dashboard/checkins", icon: "☀️" },
+    { label: "Open POS register",  href: "/dashboard/pos",             icon: "🛒" },
+    { label: "New purchase order", href: "/dashboard/purchase/new",     icon: "📥" },
+    { label: "Add an employee",    href: "/dashboard/hr/employees/new", icon: "👥" },
+    { label: "Daily check-in",     href: "/dashboard/checkins",         icon: "☀️" },
   ],
   distributor: [
-    { label: "New purchase order", href: "/dashboard/purchase/new", icon: "📥" },
-    { label: "Add a product", href: "/dashboard/inventory/new", icon: "📦" },
-    { label: "New invoice", href: "/dashboard/billing/new", icon: "🧾" },
-    { label: "Add a buyer", href: "/dashboard/crm/contacts/new", icon: "🤝" },
+    { label: "New purchase order", href: "/dashboard/purchase/new",    icon: "📥" },
+    { label: "Add a product",      href: "/dashboard/inventory/new",    icon: "📦" },
+    { label: "New invoice",        href: "/dashboard/billing/new",      icon: "🧾" },
+    { label: "Add a buyer",        href: "/dashboard/crm/contacts/new", icon: "🤝" },
   ],
   manufacturer: [
-    { label: "New purchase order", href: "/dashboard/purchase/new", icon: "📥" },
-    { label: "Add a product", href: "/dashboard/inventory/new", icon: "📦" },
-    { label: "Production project", href: "/dashboard/projects/new", icon: "📊" },
-    { label: "New invoice", href: "/dashboard/billing/new", icon: "🧾" },
+    { label: "New purchase order", href: "/dashboard/purchase/new",  icon: "📥" },
+    { label: "Add a product",      href: "/dashboard/inventory/new",  icon: "📦" },
+    { label: "Production project", href: "/dashboard/projects/new",   icon: "📊" },
+    { label: "New invoice",        href: "/dashboard/billing/new",    icon: "🧾" },
   ],
   general: [
-    { label: "New invoice", href: "/dashboard/billing/new", icon: "🧾" },
-    { label: "New task", href: "/dashboard/tasks", icon: "✅" },
-    { label: "Write a doc", href: "/dashboard/docs", icon: "📚" },
-    { label: "View reports", href: "/dashboard/reports", icon: "📈" },
+    { label: "New invoice",  href: "/dashboard/billing/new", icon: "🧾" },
+    { label: "New task",     href: "/dashboard/tasks",        icon: "✅" },
+    { label: "Write a doc",  href: "/dashboard/docs",         icon: "📚" },
+    { label: "View reports", href: "/dashboard/reports",      icon: "📈" },
   ],
 };
 

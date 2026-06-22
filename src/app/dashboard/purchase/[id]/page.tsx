@@ -8,6 +8,7 @@ import ReceiveForm from './ReceiveForm';
 import BillButton from './BillButton';
 import StatusButton from './StatusButton';
 import AttachmentPanel from '@/components/AttachmentPanel';
+import Comments from '@/components/Comments';
 import ReturnForm from './ReturnForm';
 import LandedCostForm from './LandedCostForm';
 
@@ -257,6 +258,8 @@ export default async function PODetailPage({ params }: { params: { id: string } 
       <div className="rounded-xl border border-neutral-200 bg-white p-6">
         <AttachmentPanel entityType="purchase_order" entityId={poData.id} />
       </div>
+
+      <Comments entityType="purchase_order" entityId={poData.id} currentUserId={ctx.user.id} />
     </div>
   );
 }

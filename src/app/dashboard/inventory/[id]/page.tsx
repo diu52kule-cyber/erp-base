@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Product, ProductBatch, StockMovement } from '@/lib/types/inventory';
 import DeleteProductButton from './DeleteProductButton';
 import AddBatchForm from './AddBatchForm';
+import ArchiveButton from '@/components/ArchiveButton';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
@@ -82,6 +83,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
             </Link>
           )}
           <Link href={`/dashboard/inventory/${product.id}/edit`} className="rounded-md border border-neutral-200 px-4 py-2 text-sm hover:bg-neutral-50">Edit</Link>
+          <ArchiveButton table="products" id={product.id} archived={!!(product as any).archived_at} redirectTo="/dashboard/inventory" />
           <DeleteProductButton productId={product.id} productName={product.name} />
         </div>
       </div>

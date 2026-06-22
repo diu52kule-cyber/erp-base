@@ -17,10 +17,20 @@ export default async function HRPage() {
   const today = new Date().toISOString().split('T')[0];
 
   const [{ data: employees }, { data: todayAtt }, { data: payrollRuns }] = await Promise.all([
-    supabase.from('employees').select('*').eq('org_id', ctx.org.id).eq('status', 'active').order('name'),
+    supabase.from('employees').select('*').eq('org_id', ctx.org.id).eq('status', 'active').is('archived_at', null).order('name'),
     supabase.from('attendance').select('*, employee:employees(name)').eq('org_id', ctx.org.id).eq('date', today),
     supabase.from('payroll_runs').select('*').eq('org_id', ctx.org.id).order('month', { ascending: false }).limit(3),
   ]);
+
+  let pendingLeaves = 0;
+  try {
+    const { count } = await supabase
+      .from('leave_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', ctx.org.id)
+      .eq('status', 'pending');
+    pendingLeaves = count ?? 0;
+  } catch { /* table not yet migrated */ }
 
   const empList = (employees ?? []) as Employee[];
   const attList = (todayAtt ?? []) as AttendanceRecord[];
@@ -35,9 +45,18 @@ export default async function HRPage() {
           <h1 className="text-2xl font-semibold">HR</h1>
           <p className="mt-1 text-sm text-neutral-500">Employees, attendance &amp; payroll</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/dashboard/hr/attendance" className="rounded-lg border border-neutral-200 px-4 py-2 text-sm hover:bg-neutral-50">
-            Mark Attendance
+        <div className="flex flex-wrap gap-2">
+          <Link href="/dashboard/hr/leaves" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            Leave
+          </Link>
+          <Link href="/dashboard/hr/holidays" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            Holidays
+          </Link>
+          <Link href="/dashboard/hr/loans" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            Loans
+          </Link>
+          <Link href="/dashboard/hr/attendance" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            Attendance
           </Link>
           <Link href="/dashboard/hr/employees/new" className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">
             + Add Employee
@@ -46,16 +65,17 @@ export default async function HRPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-5">
         {[
           { label: 'Active Employees', value: empList.length },
           { label: 'Present Today', value: `${presentToday} / ${empList.length}` },
           { label: 'Unmarked Today', value: empList.length - markedIds.size },
           { label: 'Monthly Payroll', value: fmt(totalSalary) },
+          { label: 'Pending Leaves', value: pendingLeaves, highlight: pendingLeaves > 0 },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-neutral-200 bg-white p-5">
+          <div key={s.label} className={`rounded-xl border bg-white p-5 ${(s as any).highlight ? 'border-amber-200' : 'border-neutral-200'}`}>
             <p className="text-sm text-neutral-500">{s.label}</p>
-            <p className="mt-1 text-2xl font-semibold">{s.value}</p>
+            <p className={`mt-1 text-2xl font-semibold ${(s as any).highlight ? 'text-amber-600' : ''}`}>{s.value}</p>
           </div>
         ))}
       </div>
