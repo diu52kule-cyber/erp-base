@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { promptDialog, toast } from '@/lib/toast';
 
 type Task = { id: string; title: string; status: string; priority: string; assignee_id: string | null; due_date: string | null; sprint_id: string | null };
@@ -31,6 +31,9 @@ export default function TasksBoard({ initialTasks, sprints, members, activeSprin
   const [assignee, setAssignee] = useState('');
   const [sprint, setSprint] = useState(activeSprint ?? '');
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const editRef = useRef<HTMLInputElement>(null);
 
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? null;
   const filtered = sprint ? tasks.filter((t) => t.sprint_id === sprint) : tasks;
@@ -48,6 +51,24 @@ export default function TasksBoard({ initialTasks, sprints, members, activeSprin
       setTasks((t) => [{ id: data.id, title, status: 'todo', priority, assignee_id: assignee || null, due_date: null, sprint_id: sprint || null }, ...t]);
       setTitle('');
     }
+  }
+
+  function startEdit(t: Task) {
+    setEditingId(t.id);
+    setEditTitle(t.title);
+    setTimeout(() => editRef.current?.select(), 10);
+  }
+
+  async function saveEdit(id: string) {
+    const t = editTitle.trim();
+    if (!t || t === tasks.find((x) => x.id === id)?.title) { setEditingId(null); return; }
+    setTasks((prev) => prev.map((x) => x.id === id ? { ...x, title: t } : x));
+    setEditingId(null);
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: t }),
+    });
   }
 
   async function move(id: string, status: string) {
@@ -112,7 +133,22 @@ export default function TasksBoard({ initialTasks, sprints, members, activeSprin
               <div className="space-y-2">
                 {items.map((t) => (
                   <div key={t.id} className="rounded-lg border border-neutral-200 bg-white p-2.5">
-                    <div className="text-sm">{t.title}</div>
+                    {editingId === t.id ? (
+                      <input
+                        ref={editRef}
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={() => saveEdit(t.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(t.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        className="w-full text-sm rounded border border-blue-300 px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        autoFocus
+                      />
+                    ) : (
+                      <div className="text-sm cursor-text" onDoubleClick={() => startEdit(t)} title="Double-click to edit">{t.title}</div>
+                    )}
                     <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                       <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${PRIORITY[t.priority]}`}>{t.priority}</span>
                       {memberName(t.assignee_id) && (
