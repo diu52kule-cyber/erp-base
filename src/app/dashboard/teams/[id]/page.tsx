@@ -4,6 +4,7 @@ import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import TeamWorkspaceClient from './TeamWorkspaceClient';
 import TeamActivityFeed from './TeamActivityFeed';
+import AnnouncementsPanel from './AnnouncementsPanel';
 
 export default async function TeamWorkspacePage({ params }: { params: { id: string } }) {
   const ctx = await getOrgContext();
@@ -121,12 +122,18 @@ export default async function TeamWorkspacePage({ params }: { params: { id: stri
         />
       </div>
 
+      {/* Announcements */}
+      <div className="rounded-xl border border-neutral-200 bg-white p-5">
+        <AnnouncementsPanel teamId={params.id} canPost={canManage} />
+      </div>
+
       {/* Quick links to workspace modules */}
       <div className="rounded-xl border border-neutral-200 bg-white p-5 space-y-3">
         <h2 className="font-medium">Team Workspace</h2>
         <p className="text-sm text-neutral-500">Jump to shared tools for this team.</p>
         <div className="flex flex-wrap gap-2">
           {[
+            { label: 'Team Board', href: `/dashboard/teams/${params.id}/board`, icon: '🗂' },
             { label: 'Tasks', href: '/dashboard/tasks', icon: '✅' },
             { label: 'Docs', href: '/dashboard/docs', icon: '📚' },
             { label: 'Projects', href: '/dashboard/projects', icon: '📊' },
