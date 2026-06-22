@@ -359,7 +359,12 @@ export default function POSTerminal({
           </div>
         </div>
         <button onClick={newOrder} className="rounded-xl bg-neutral-900 px-8 py-3 text-white font-medium">New Order</button>
-        <button onClick={() => window.print()} className="text-sm text-neutral-500 hover:text-neutral-900">Print Receipt</button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => window.print()} className="text-sm text-neutral-500 hover:text-neutral-900">Print Receipt</button>
+          {!lastOrder.isRefund && (
+            <SMSReceiptButton orderId={lastOrder.id} orderNumber={lastOrder.order_number} total={lastOrder.total} customerName={lastOrder.customerName} />
+          )}
+        </div>
       </div>
     );
   }
@@ -737,6 +742,52 @@ export default function POSTerminal({
               </button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SMSReceiptButton({ orderId, orderNumber, total, customerName }: { orderId: string; orderNumber: string; total: number; customerName: string }) {
+  const [phone, setPhone]   = useState('');
+  const [open, setOpen]     = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent]     = useState(false);
+
+  async function send() {
+    if (!phone.trim()) return;
+    setSending(true);
+    const message = `Receipt: ${orderNumber}\nAmount: ₹${Math.abs(total).toFixed(2)}\n${customerName ? `Customer: ${customerName}\n` : ''}Thank you for your purchase!`;
+    const res = await fetch('/api/sms/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: phone, message, reference: orderId }),
+    });
+    const data = await res.json();
+    if (data.ok) { setSent(true); setOpen(false); }
+    else alert(data.error ?? 'Failed to send SMS');
+    setSending(false);
+  }
+
+  if (sent) return <span className="text-xs text-green-600">SMS sent ✓</span>;
+
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen((o) => !o)} className="text-sm text-neutral-500 hover:text-neutral-900">
+        SMS Receipt
+      </button>
+      {open && (
+        <div className="absolute bottom-full mb-2 right-0 w-56 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg space-y-2">
+          <p className="text-xs font-medium">Send SMS receipt</p>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Mobile number"
+            className="w-full rounded-lg border border-neutral-200 px-2 py-1.5 text-xs focus:outline-none"
+          />
+          <button onClick={send} disabled={sending || !phone.trim()} className="w-full rounded-lg bg-neutral-900 py-1.5 text-xs text-white disabled:opacity-50">
+            {sending ? 'Sending…' : 'Send'}
+          </button>
         </div>
       )}
     </div>

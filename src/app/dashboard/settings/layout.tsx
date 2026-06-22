@@ -15,6 +15,7 @@ const SETTINGS_NAV: NavItem[] = [
   { href: '/dashboard/settings/api',         label: 'API Keys',     roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/webhooks',    label: 'Webhooks',     roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/outlets',      label: 'Outlets',      roles: ['owner', 'admin'] },
+  { href: '/dashboard/settings/sms',         label: 'SMS Gateway',  roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/automations',  label: 'Automations',  roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/audit',       label: 'Audit Log',    roles: ['owner', 'admin', 'manager'] },
 ];
