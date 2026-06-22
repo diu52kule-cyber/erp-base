@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import CommandPalette from "@/components/CommandPalette";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay";
 import GlobalHotkeys from "@/components/GlobalHotkeys";
+import ToastProvider from "@/components/ToastProvider";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -69,7 +70,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         )}
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-7xl p-6 lg:p-8">{children}</div>
+          <ToastProvider>
+            <div className="mx-auto max-w-7xl p-6 lg:p-8">{children}</div>
+          </ToastProvider>
         </div>
       </main>
     </div>

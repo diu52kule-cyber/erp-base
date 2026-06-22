@@ -5,8 +5,19 @@ import { ORG_ROLES, ROLE_LABELS, ROLE_COLORS, ROLE_DESCRIPTIONS, canInvite, canM
 import type { OrgRole } from '@/lib/types/roles';
 import { confirmDialog, toast } from '@/lib/toast';
 
-type Member = { id: string; user_id: string; email: string; role: OrgRole; joined_at: string; is_self: boolean };
+type Member = { id: string; user_id: string; email: string; role: OrgRole; joined_at: string; is_self: boolean; is_guest?: boolean; guest_modules?: string[] };
 type Invite  = { id: string; email: string; role: OrgRole; token: string; expires_at: string; created_at: string };
+
+const GUEST_MODULES = [
+  { key: 'billing', label: 'Billing (view invoices)' },
+  { key: 'projects', label: 'Projects' },
+  { key: 'tasks', label: 'Tasks' },
+  { key: 'docs', label: 'Docs & KB' },
+  { key: 'crm', label: 'CRM Contacts' },
+  { key: 'issues', label: 'Issues' },
+  { key: 'goals', label: 'Goals / OKRs' },
+  { key: 'meetings', label: 'Meetings' },
+];
 
 export default function TeamClient({ myRole, appUrl }: { myRole: OrgRole; appUrl: string }) {
   const [members, setMembers]   = useState<Member[]>([]);
@@ -18,6 +29,11 @@ export default function TeamClient({ myRole, appUrl }: { myRole: OrgRole; appUrl
   const [newInviteUrl, setNewInviteUrl] = useState<string | null>(null);
   const [copied, setCopied]     = useState(false);
   const [error, setError]       = useState<string | null>(null);
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [guestEmail, setGuestEmail]   = useState('');
+  const [guestMods, setGuestMods]     = useState<string[]>(['billing', 'projects']);
+  const [guestPending, setGuestPending] = useState(false);
+  const [guestUrl, setGuestUrl]       = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,6 +80,25 @@ export default function TeamClient({ myRole, appUrl }: { myRole: OrgRole; appUrl
     navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   }
 
+  async function handleGuestInvite() {
+    if (!guestEmail.trim()) { setError('Email is required'); return; }
+    if (guestMods.length === 0) { setError('Select at least one module for the guest'); return; }
+    setError(null); setGuestPending(true); setGuestUrl(null);
+    const res = await fetch('/api/settings/team', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: guestEmail, role: 'viewer', is_guest: true, guest_modules: guestMods }),
+    });
+    const data = await res.json();
+    if (data.error) { setError(data.error); }
+    else { setGuestUrl(data.invite_url); setGuestEmail(''); }
+    setGuestPending(false);
+  }
+
+  function toggleGuestMod(key: string) {
+    setGuestMods((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
+  }
+
   return (
     <div className="space-y-8">
       {/* Members */}
@@ -86,6 +121,7 @@ export default function TeamClient({ myRole, appUrl }: { myRole: OrgRole; appUrl
                     <td className="px-4 py-3">
                       {m.email}
                       {m.is_self && <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-400">you</span>}
+                      {m.is_guest && <span className="ml-2 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700">guest</span>}
                     </td>
                     <td className="px-4 py-3">
                       {canManageRoles(myRole) && !m.is_self ? (
@@ -198,6 +234,69 @@ export default function TeamClient({ myRole, appUrl }: { myRole: OrgRole; appUrl
               </button>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* Guest access */}
+      {canInvite(myRole) && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Guest Access</h2>
+            <button onClick={() => setShowGuestForm((v) => !v)}
+              className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs hover:bg-neutral-50">
+              {showGuestForm ? 'Cancel' : '+ Invite Guest'}
+            </button>
+          </div>
+          <p className="text-sm text-neutral-500">
+            Guests (e.g., clients, contractors) get view-only access to specific modules only — no HR, payroll, or settings.
+          </p>
+          {showGuestForm && (
+            <div className="rounded-xl border border-neutral-200 bg-white p-6 space-y-4">
+              {guestUrl && (
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 space-y-2">
+                  <p className="text-sm font-medium text-green-800">Guest invite created! Share this link:</p>
+                  <div className="flex gap-2">
+                    <input readOnly value={guestUrl} className="flex-1 rounded-lg border border-green-200 bg-white px-3 py-2 font-mono text-xs" />
+                    <button onClick={() => copyInviteUrl(guestUrl)}
+                      className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white hover:bg-green-800">
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-green-600">Expires in 7 days. Guest sees only the modules you selected.</p>
+                </div>
+              )}
+              <div>
+                <label className="mb-1 block text-sm text-neutral-600">Guest email</label>
+                <input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)}
+                  placeholder="client@company.com"
+                  className="w-full max-w-sm rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm text-neutral-600">Modules guest can view</label>
+                <div className="flex flex-wrap gap-2">
+                  {GUEST_MODULES.map((m) => (
+                    <button
+                      key={m.key}
+                      onClick={() => toggleGuestMod(m.key)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                        guestMods.includes(m.key)
+                          ? 'border-neutral-900 bg-neutral-900 text-white'
+                          : 'border-neutral-200 text-neutral-500 hover:border-neutral-400'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button onClick={handleGuestInvite} disabled={guestPending}
+                  className="rounded-md bg-neutral-900 px-5 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50">
+                  {guestPending ? 'Generating…' : 'Generate Guest Link'}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 

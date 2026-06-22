@@ -14,7 +14,7 @@ export async function GET() {
   const admin    = createAdminClient();
 
   const [{ data: memberships }, { data: invites }] = await Promise.all([
-    supabase.from('memberships').select('id,user_id,role,created_at').eq('org_id', ctx.org.id),
+    supabase.from('memberships').select('id,user_id,role,is_guest,guest_modules,created_at').eq('org_id', ctx.org.id),
     supabase.from('org_invites').select('id,email,role,token,expires_at,accepted_at,created_at')
       .eq('org_id', ctx.org.id).is('accepted_at', null).gt('expires_at', new Date().toISOString()),
   ]);
@@ -36,6 +36,8 @@ export async function GET() {
     role: m.role as OrgRole,
     joined_at: m.created_at,
     is_self: m.user_id === ctx.user.id,
+    is_guest: (m as any).is_guest === true,
+    guest_modules: (m as any).guest_modules ?? [],
   }));
 
   return NextResponse.json({ members, invites: invites ?? [] });
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
   if (!canInvite(ctx.org.role as OrgRole))
     return NextResponse.json({ error: 'Only owners and managers can invite members' }, { status: 403 });
 
-  const { email, role } = await req.json();
+  const { email, role, is_guest, guest_modules } = await req.json();
   if (!email?.trim()) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
 
   const supabase = createClient();
@@ -78,8 +80,10 @@ export async function POST(req: NextRequest) {
     .insert({
       org_id: ctx.org.id,
       email: email.toLowerCase().trim(),
-      role: role ?? 'staff',
+      role: is_guest ? 'viewer' : (role ?? 'staff'),
       invited_by: ctx.user.id,
+      is_guest: is_guest === true,
+      guest_modules: is_guest ? (guest_modules ?? []) : [],
     })
     .select('token')
     .single();

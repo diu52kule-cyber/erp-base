@@ -35,7 +35,7 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
   // Fetch invite
   const { data: invite, error: invErr } = await admin
     .from('org_invites')
-    .select('id,org_id,role,email,accepted_at,expires_at')
+    .select('id,org_id,role,email,accepted_at,expires_at,is_guest,guest_modules')
     .eq('token', params.token)
     .single();
 
@@ -70,6 +70,8 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
     org_id: invite.org_id,
     user_id: ctx.user.id,
     role: invite.role,
+    is_guest: (invite as any).is_guest === true,
+    guest_modules: (invite as any).guest_modules ?? [],
   });
 
   if (memErr) return NextResponse.json({ error: memErr.message }, { status: 500 });

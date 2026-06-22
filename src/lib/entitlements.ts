@@ -15,7 +15,7 @@ export type AccessState = "active" | "trial" | "locked";
 
 export type OrgContext = {
   user: { id: string; email?: string };
-  org: { id: string; role: string; name: string; business_type: string } | null;
+  org: { id: string; role: string; name: string; business_type: string; isGuest?: boolean } | null;
   enabledModules: Set<string>;
   plan: PlanInfo;
   access: AccessState;
@@ -49,7 +49,7 @@ export const getOrgContext = cache(async (): Promise<OrgContext | null> => {
 
   const { data: membership } = await supabase
     .from("memberships")
-    .select("org_id, role, organizations(name, business_type)")
+    .select("org_id, role, is_guest, guest_modules, organizations(name, business_type)")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
@@ -76,6 +76,29 @@ export const getOrgContext = cache(async (): Promise<OrgContext | null> => {
   const orgModules = entRows && entRows.length > 0
     ? new Set(entRows.map((r) => r.module_key as string))
     : new Set(ALL_MODULE_KEYS);
+
+  // Guests are restricted to only their whitelisted modules.
+  const isGuest = (membership as any).is_guest === true;
+  if (isGuest) {
+    const guestMods: string[] = (membership as any).guest_modules ?? [];
+    const enabledModules = new Set(guestMods.filter((k) => orgModules.has(k)));
+    const plan = planRow
+      ? { plan_name: planRow.plan_name as string, status: planRow.status as string, amount: Number(planRow.amount ?? 0), billing_period: planRow.billing_period as string, next_billing_date: (planRow.next_billing_date as string | null) ?? null }
+      : defaultPlan;
+    const { access, trialDaysLeft } = computeAccess(plan);
+    return {
+      user,
+      org: {
+        id: orgId, role: 'viewer',
+        // @ts-expect-error supabase nested select typing
+        name: membership.organizations?.name as string,
+        // @ts-expect-error supabase nested select typing
+        business_type: membership.organizations?.business_type as string,
+        isGuest: true,
+      },
+      enabledModules, plan, access, trialDaysLeft,
+    };
+  }
 
   // Restrict to what this member's ROLE may access (owner/manager = all).
   const roleAllowed = allowedModulesForRole(membership.role as string);
@@ -104,6 +127,7 @@ export const getOrgContext = cache(async (): Promise<OrgContext | null> => {
       name: membership.organizations?.name as string,
       // @ts-expect-error supabase nested select typing
       business_type: membership.organizations?.business_type as string,
+      isGuest: false,
     },
     enabledModules,
     plan,
