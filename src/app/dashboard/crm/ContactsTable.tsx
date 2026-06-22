@@ -8,6 +8,9 @@ import type { Contact, Deal } from '@/lib/types/crm';
 const CONTACT_TYPES = ['lead', 'customer', 'vendor'] as const;
 const PAGE_SIZE = 50;
 
+type SortField = 'name' | 'company' | 'type';
+type SortDir   = 'asc' | 'desc';
+
 function exportCsv(rows: Contact[]) {
   const headers = ['Name','Company','Type','Email','Phone','Tags'];
   const lines = rows.map((c) => [
@@ -21,19 +24,46 @@ function exportCsv(rows: Contact[]) {
   a.click();
 }
 
+function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: SortDir }) {
+  if (sortField !== field) return <span className="ml-1 text-neutral-300">↕</span>;
+  return <span className="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export default function ContactsTable({ contacts, deals }: { contacts: Contact[]; deals: Deal[] }) {
-  const [search, setSearch]   = useState('');
-  const [type, setType]       = useState<string>('');
-  const [page, setPage]       = useState(0);
+  const [search, setSearch]         = useState('');
+  const [type, setType]             = useState<string>('');
+  const [page, setPage]             = useState(0);
+  const [sortField, setSortField]   = useState<SortField>('name');
+  const [sortDir,   setSortDir]     = useState<SortDir>('asc');
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+    setPage(0);
+  }
 
   const filtered = useMemo(() => {
     const ql = search.toLowerCase().trim();
-    return contacts.filter((c) => {
+    const rows = contacts.filter((c) => {
       const matchQ  = !ql || c.name.toLowerCase().includes(ql) || (c.company ?? '').toLowerCase().includes(ql) || (c.email ?? '').toLowerCase().includes(ql);
       const matchT  = !type || c.type === type;
-      return matchQ && matchT;
+      return matchQ && matchT && !(c as any).archived_at;
     });
-  }, [contacts, search, type]);
+    rows.sort((a, b) => {
+      let av = '', bv = '';
+      if (sortField === 'name')    { av = a.name.toLowerCase(); bv = b.name.toLowerCase(); }
+      if (sortField === 'company') { av = (a.company ?? '').toLowerCase(); bv = (b.company ?? '').toLowerCase(); }
+      if (sortField === 'type')    { av = a.type; bv = b.type; }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return rows;
+  }, [contacts, search, type, sortField, sortDir]);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const pageRows  = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -65,9 +95,15 @@ export default function ContactsTable({ contacts, deals }: { contacts: Contact[]
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-100 bg-neutral-50 text-xs text-neutral-500">
-                <th className="px-4 py-3 text-left font-medium">Name</th>
-                <th className="px-4 py-3 text-left font-medium">Company</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
+                <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort('name')}>
+                  Name <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
+                </th>
+                <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort('company')}>
+                  Company <SortIcon field="company" sortField={sortField} sortDir={sortDir} />
+                </th>
+                <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort('type')}>
+                  Type <SortIcon field="type" sortField={sortField} sortDir={sortDir} />
+                </th>
                 <th className="px-4 py-3 text-left font-medium">Email / Phone</th>
                 <th className="px-4 py-3 text-left font-medium">Deals</th>
               </tr>

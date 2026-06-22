@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const orgId = ctx.org.id;
   const like  = `%${q}%`;
 
-  const [invoicesRes, contactsRes, productsRes, tasksRes, posRes, projectsRes] = await Promise.all([
+  const [invoicesRes, contactsRes, productsRes, tasksRes, posRes, projectsRes, meetingsRes, docsRes] = await Promise.all([
     supabase
       .from('invoices')
       .select('id, invoice_number, customer_name, total, status, doc_type')
@@ -66,6 +66,26 @@ export async function GET(req: NextRequest) {
           .eq('org_id', orgId)
           .ilike('name', like)
           .order('created_at', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] }),
+    // meetings
+    ctx.enabledModules.has('meetings')
+      ? supabase
+          .from('meetings')
+          .select('id, title, scheduled_at, status')
+          .eq('org_id', orgId)
+          .ilike('title', like)
+          .order('scheduled_at', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] }),
+    // docs
+    ctx.enabledModules.has('docs')
+      ? supabase
+          .from('documents')
+          .select('id, title, type')
+          .eq('org_id', orgId)
+          .ilike('title', like)
+          .order('updated_at', { ascending: false })
           .limit(5)
       : Promise.resolve({ data: [] }),
   ]);
@@ -124,6 +144,24 @@ export async function GET(req: NextRequest) {
       title: pr.name,
       subtitle: `project · ${pr.status}`,
       href: `/dashboard/projects/${pr.id}`,
+    });
+  }
+  for (const m of (meetingsRes.data ?? []) as any[]) {
+    results.push({
+      type: 'meeting',
+      id: m.id,
+      title: m.title,
+      subtitle: `meeting · ${m.status ?? 'scheduled'}`,
+      href: `/dashboard/meetings/${m.id}`,
+    });
+  }
+  for (const d of (docsRes.data ?? []) as any[]) {
+    results.push({
+      type: 'doc',
+      id: d.id,
+      title: d.title,
+      subtitle: `doc · ${d.type ?? 'document'}`,
+      href: `/dashboard/docs/${d.id}`,
     });
   }
 
