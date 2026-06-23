@@ -55,10 +55,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (batchErr) return NextResponse.json({ error: batchErr.message }, { status: 500 });
 
-  // Add stock movement and update product qty
-  const newQty = Math.round((product.stock_qty + Number(qty)) * 1000) / 1000;
+  // Atomic stock update — no race condition
+  await supabase.rpc('adjust_stock', { p_product_id: params.id, p_org_id: ctx.org.id, p_delta: Number(qty) });
   await Promise.all([
-    supabase.from('products').update({ stock_qty: newQty }).eq('id', params.id).eq('org_id', ctx.org.id),
     supabase.from('stock_movements').insert({
       org_id: ctx.org.id,
       product_id: params.id,

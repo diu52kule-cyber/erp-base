@@ -13,7 +13,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const supabase = createClient();
-  const { error } = await supabase.from('tasks').update(update).eq('id', params.id);
+  const { error } = await supabase
+    .from('tasks')
+    .update(update)
+    .eq('id', params.id)
+    .eq('org_id', ctx.org.id);  // prevents cross-tenant write
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }
@@ -21,8 +26,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await getOrgContext();
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const supabase = createClient();
-  const { error } = await supabase.from('tasks').delete().eq('id', params.id);
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', params.id)
+    .eq('org_id', ctx.org.id);  // prevents cross-tenant delete
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

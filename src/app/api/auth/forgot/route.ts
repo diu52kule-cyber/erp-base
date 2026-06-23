@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit, rateLimitKey } from '@/lib/rateLimit';
 
 const SITE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://erp-base-eight.vercel.app';
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 3 password reset attempts per IP per 15 minutes
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
+  const allowed = await checkRateLimit(rateLimitKey('forgot', ip), 3, 900);
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many reset attempts. Please try again later.' }, { status: 429 });
+  }
+
   const { email } = await req.json();
   if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
 

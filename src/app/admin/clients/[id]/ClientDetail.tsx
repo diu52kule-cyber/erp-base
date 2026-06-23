@@ -24,12 +24,28 @@ export default function ClientDetail({ orgId, orgName, initialPlan, initialModul
   const [modules, setModules] = useState<Module[]>(initialModules);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   async function patch(body: object) {
-    setSaving(true); setSaved(false);
-    await fetch(`/api/admin/orgs/${orgId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    setSaving(false); setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaving(true); setSaved(false); setSaveError(null);
+    try {
+      const res = await fetch(`/api/admin/orgs/${orgId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSaveError((data as any).error ?? `Error ${res.status}`);
+      } else {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch {
+      setSaveError('Network error — check your connection');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function savePlan() { await patch({ plan }); }
@@ -65,6 +81,7 @@ export default function ClientDetail({ orgId, orgName, initialPlan, initialModul
           <h2 className="font-semibold text-lg">Subscription Plan</h2>
           <div className="flex items-center gap-3">
             {saved && <span className="text-xs text-green-600 font-medium">Saved ✓</span>}
+            {saveError && <span className="text-xs text-red-600 font-medium">{saveError}</span>}
             <button onClick={savePlan} disabled={saving}
               className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50">
               {saving ? 'Saving…' : 'Save Plan'}

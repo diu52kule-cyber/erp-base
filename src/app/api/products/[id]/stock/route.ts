@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getOrgContext } from '@/lib/entitlements';
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await getOrgContext();
   if (!ctx?.org || !ctx.enabledModules.has('inventory')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,25 +13,27 @@ export async function PATCH(
 
   const supabase = createClient();
 
-  const { data: product } = await supabase
-    .from('products')
-    .select('stock_qty')
-    .eq('id', params.id)
-    .eq('org_id', ctx.org.id)
-    .single();
+  // Atomic single-statement update — eliminates read-modify-write race condition.
+  // adjust_stock returns the new qty; throws if product not found.
+  const { data: newQty, error: rpcErr } = await supabase
+    .rpc('adjust_stock', {
+      p_product_id: params.id,
+      p_org_id: ctx.org.id,
+      p_delta: delta,
+    });
 
-  if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+  if (rpcErr) {
+    if (rpcErr.message.includes('Product not found')) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+    return NextResponse.json({ error: rpcErr.message }, { status: 500 });
+  }
 
-  const newQty = Math.round((product.stock_qty + delta) * 1000) / 1000;
-  if (newQty < 0) return NextResponse.json({ error: 'Stock cannot go below zero' }, { status: 400 });
-
-  const { error: updateErr } = await supabase
-    .from('products')
-    .update({ stock_qty: newQty })
-    .eq('id', params.id)
-    .eq('org_id', ctx.org.id);
-
-  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  if ((newQty as number) < 0) {
+    // Roll back by reversing the delta
+    await supabase.rpc('adjust_stock', { p_product_id: params.id, p_org_id: ctx.org.id, p_delta: -delta });
+    return NextResponse.json({ error: 'Stock cannot go below zero' }, { status: 400 });
+  }
 
   await supabase.from('stock_movements').insert({
     org_id: ctx.org.id,

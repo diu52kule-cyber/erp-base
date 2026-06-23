@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit, rateLimitKey } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 signup attempts per IP per 10 minutes
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
+  const allowed = await checkRateLimit(rateLimitKey('signup', ip), 5, 600);
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many signup attempts. Please try again later.' }, { status: 429 });
+  }
+
   const { email, password } = await req.json();
 
   if (!email || !password) {

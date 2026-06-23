@@ -6,6 +6,7 @@ import AttachmentPanel from '@/components/AttachmentPanel';
 import ArchiveButton from '@/components/ArchiveButton';
 import SelfServiceTokenButton from './SelfServiceTokenButton';
 import EmployeeTabs from './EmployeeTabs';
+import LoginActions from './LoginActions';
 
 const DEPT_COLORS: Record<string, string> = {
   'Engineering':     'bg-indigo-100 text-indigo-700',
@@ -138,9 +139,12 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <SelfServiceTokenButton employeeId={emp.id} existingToken={emp.self_service_token ?? null} />
-                <ArchiveButton table="employees" id={emp.id} archived={!!emp.archived_at} redirectTo="/dashboard/hr" />
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex items-center gap-2">
+                  <SelfServiceTokenButton employeeId={emp.id} existingToken={emp.self_service_token ?? null} />
+                  <ArchiveButton table="employees" id={emp.id} archived={!!emp.archived_at} redirectTo="/dashboard/hr" />
+                </div>
+                <LoginActions employeeId={emp.id} userId={emp.user_id ?? null} email={emp.email ?? null} />
               </div>
             </div>
 

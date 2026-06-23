@@ -6,6 +6,7 @@ type NavItem = { href: string; label: string; roles: OrgRole[] | 'all' };
 
 const SETTINGS_NAV: NavItem[] = [
   { href: '/dashboard/settings/preferences', label: 'Preferences', roles: 'all' },
+  { href: '/dashboard/settings/password',    label: 'Password',    roles: 'all' },
   { href: '/dashboard/settings/business',    label: 'Business type', roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/team',        label: 'Team Members',  roles: ['owner', 'admin', 'manager'] },
   { href: '/dashboard/settings/departments', label: 'Departments',   roles: ['owner', 'admin', 'manager'] },
@@ -17,6 +18,7 @@ const SETTINGS_NAV: NavItem[] = [
   { href: '/dashboard/settings/outlets',      label: 'Outlets',      roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/sms',         label: 'SMS Gateway',  roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/automations',  label: 'Automations',  roles: ['owner', 'admin'] },
+  { href: '/dashboard/settings/backup',      label: 'Backup',       roles: ['owner', 'admin'] },
   { href: '/dashboard/settings/audit',       label: 'Audit Log',    roles: ['owner', 'admin', 'manager'] },
 ];
 
