@@ -87,6 +87,7 @@ export default function EmployeeForm() {
   const [error, setError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [consentGiven, setConsentGiven] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -106,6 +107,7 @@ export default function EmployeeForm() {
 
   async function handleSubmit() {
     if (!form.name.trim()) { setError('Name is required'); return; }
+    if (!consentGiven) { setError('Please confirm data processing consent before enrolling the employee'); return; }
     if (form.create_login && !form.email.trim()) { setError('Email is required to create a login'); return; }
     setError(null);
     setPending(true);
@@ -250,8 +252,25 @@ export default function EmployeeForm() {
         )}
       </div>
 
+      {/* Data processing consent — required under India's DPDP Act 2023 */}
+      <div className="rounded-xl border border-neutral-200 bg-white p-5">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={consentGiven}
+            onChange={(e) => setConsentGiven(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300 accent-neutral-900 cursor-pointer"
+          />
+          <span className="text-sm text-neutral-600 leading-relaxed">
+            I confirm this employee has been informed that their personal data (name, contact details, salary, attendance) will be stored and processed to manage employment as described in the{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-neutral-900 underline underline-offset-2">Privacy Policy</a>.
+            This consent is required under India&apos;s Digital Personal Data Protection Act 2023.
+          </span>
+        </label>
+      </div>
+
       <div className="flex justify-end">
-        <button type="button" onClick={handleSubmit} disabled={pending}
+        <button type="button" onClick={handleSubmit} disabled={pending || !consentGiven}
           className="rounded-md bg-neutral-900 px-6 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50">
           {pending ? 'Saving…' : 'Add Employee'}
         </button>

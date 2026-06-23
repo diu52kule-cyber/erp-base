@@ -10,6 +10,7 @@ function SignupForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   async function handleSignup() {
     setLoading(true);
@@ -57,8 +58,22 @@ function SignupForm() {
                 placeholder="At least 6 characters" type="password" value={password}
                 onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSignup()} />
             </div>
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300 accent-neutral-900 cursor-pointer"
+              />
+              <span className="text-xs text-neutral-500 leading-relaxed">
+                I agree to the{' '}
+                <Link href="/terms" target="_blank" className="font-medium text-neutral-900 underline underline-offset-2">Terms of Service</Link>
+                {' '}and{' '}
+                <Link href="/privacy" target="_blank" className="font-medium text-neutral-900 underline underline-offset-2">Privacy Policy</Link>
+              </span>
+            </label>
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-            <button onClick={handleSignup} disabled={loading}
+            <button onClick={handleSignup} disabled={loading || !agreed}
               className="w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">
               {loading ? "Creating account…" : "Create account"}
             </button>
