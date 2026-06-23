@@ -19,9 +19,12 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const ctx = await getOrgContext();
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id, current } = await req.json();
+  const { id, current, confidence } = await req.json();
+  const update: Record<string, unknown> = {};
+  if (current !== undefined) update.current = current;
+  if (confidence !== undefined) update.confidence = confidence;
   const supabase = createClient();
-  const { error } = await supabase.from('key_results').update({ current }).eq('id', id);
+  const { error } = await supabase.from('key_results').update(update).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

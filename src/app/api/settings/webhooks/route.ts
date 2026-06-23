@@ -9,7 +9,7 @@ export async function GET() {
   const ctx = await getOrgContext();
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!canManageRoles(ctx.org.role as OrgRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase.from('webhooks').select('id,url,events,active,created_at')
     .eq('org_id', ctx.org.id).order('created_at', { ascending: false });
   return NextResponse.json(data ?? []);
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const { url, events } = await req.json();
   if (!url || !events?.length) return NextResponse.json({ error: 'URL and events required' }, { status: 400 });
   const secret = 'whsec_' + crypto.randomBytes(20).toString('hex');
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase.from('webhooks')
     .insert({ org_id: ctx.org.id, url, events, secret, active: true })
     .select('id,url,events,active,created_at').single();
@@ -35,7 +35,7 @@ export async function DELETE(req: NextRequest) {
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!canManageRoles(ctx.org.role as OrgRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await req.json();
-  const supabase = await createClient();
+  const supabase = createClient();
   await supabase.from('webhooks').delete().eq('id', id).eq('org_id', ctx.org.id);
   return NextResponse.json({ success: true });
 }

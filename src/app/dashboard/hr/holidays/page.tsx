@@ -3,13 +3,16 @@ import Link from 'next/link';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import HolidaysClient from './HolidaysClient';
+import NavSelect from '@/components/NavSelect';
+
+export const dynamic = 'force-dynamic';
 
 export default async function HolidaysPage({ searchParams }: { searchParams: { year?: string } }) {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('hr') || !ctx.org) redirect('/dashboard');
 
   const year = searchParams.year ?? new Date().getFullYear().toString();
-  const supabase = await createClient();
+  const supabase = createClient();
 
   let holidays: any[] = [];
   try {
@@ -32,15 +35,12 @@ export default async function HolidaysPage({ searchParams }: { searchParams: { y
           <p className="mt-0.5 text-sm text-neutral-500">{holidays.length} holidays in {year}</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            defaultValue={year}
-            onChange={(e) => { window.location.href = `/dashboard/hr/holidays?year=${(e.target as HTMLSelectElement).value}`; }}
-            className="rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-          >
-            {[2024, 2025, 2026, 2027].map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+          <NavSelect
+            name="year"
+            value={year}
+            baseHref="/dashboard/hr/holidays"
+            options={[2024, 2025, 2026, 2027].map((y) => ({ value: String(y), label: String(y) }))}
+          />
         </div>
       </div>
       <HolidaysClient initialHolidays={holidays} year={year} />

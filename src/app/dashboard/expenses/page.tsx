@@ -7,7 +7,7 @@ import ExpensesClient from './ExpensesClient';
 export default async function ExpensesPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('expenses') || !ctx.org) redirect('/dashboard');
-  const supabase = await createClient();
+  const supabase = createClient();
   const [{ data: claims }, { data: categories }] = await Promise.all([
     supabase.from('expense_claims').select('*, category:expense_categories(name)')
       .eq('org_id', ctx.org.id).order('created_at', { ascending: false }),

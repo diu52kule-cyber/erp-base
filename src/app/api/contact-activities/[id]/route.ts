@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const body = await req.json();
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const update: Record<string, unknown> = {};
   if ('completed_at' in body) update.completed_at = body.completed_at;
@@ -29,7 +29,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   if (!ctx?.org || !ctx.enabledModules.has('crm')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase
     .from('contact_activities')
     .delete()

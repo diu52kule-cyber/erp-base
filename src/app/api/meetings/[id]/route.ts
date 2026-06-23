@@ -8,7 +8,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
   const update: Record<string, unknown> = {};
-  for (const k of ['title', 'agenda', 'notes', 'meeting_date']) if (body[k] !== undefined) update[k] = body[k] || null;
+  for (const k of ['title', 'agenda', 'notes', 'meeting_date', 'recurrence_rule']) if (body[k] !== undefined) update[k] = body[k] || null;
+  if (body.attendees !== undefined) update.attendees = body.attendees;
+  if (body.is_recurring !== undefined) update.is_recurring = body.is_recurring;
   const supabase = createClient();
   const { error } = await supabase.from('meetings').update(update).eq('id', params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

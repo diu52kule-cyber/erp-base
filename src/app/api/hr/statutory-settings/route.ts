@@ -6,7 +6,7 @@ export async function GET() {
   const ctx = await getOrgContext();
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase
     .from('statutory_settings')
     .select('*')
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest) {
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { error } = await supabase
     .from('statutory_settings')

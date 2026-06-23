@@ -28,13 +28,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     try {
       let q = supabase
         .from('meetings')
-        .select('id, title, scheduled_at, status')
+        .select('id, title, meeting_date')
         .eq('org_id', orgId);
-      if (start) q = q.gte('scheduled_at', start);
-      if (end)   q = q.lte('scheduled_at', end + 'T23:59:59');
+      if (start) q = q.gte('meeting_date', start);
+      if (end)   q = q.lte('meeting_date', end);
       const { data: meetings } = await q.limit(100);
       for (const m of meetings ?? []) {
-        events.push({ id: m.id, title: m.title, date: m.scheduled_at?.split('T')[0], type: 'meeting', status: m.status });
+        events.push({ id: m.id, title: m.title, date: m.meeting_date, type: 'meeting' });
       }
     } catch { /* meetings may not exist */ }
 

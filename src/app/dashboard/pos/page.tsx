@@ -9,7 +9,7 @@ export default async function POSPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('pos') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const [{ data: session }, contactsResult] = await Promise.all([
     supabase.from('pos_sessions').select('*').eq('org_id', ctx.org.id).eq('status', 'open').maybeSingle(),

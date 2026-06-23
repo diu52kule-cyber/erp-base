@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const { rows } = await req.json() as { rows: Record<string, string>[] };
   if (!rows?.length) return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const records = rows.map((r) => ({
     org_id: ctx.org!.id,
     name: (r.name || r.Name || '').trim(),

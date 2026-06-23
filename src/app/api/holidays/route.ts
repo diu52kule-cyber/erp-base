@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   if (!ctx?.org || !ctx.enabledModules.has('hr')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const supabase = await createClient();
+  const supabase = createClient();
   const year = req.nextUrl.searchParams.get('year') ?? new Date().getFullYear().toString();
   const { data } = await supabase
     .from('holidays')
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const { date, name, is_optional } = body;
   if (!date || !name?.trim()) return NextResponse.json({ error: 'Date and name required' }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('holidays')
     .upsert({ org_id: ctx.org.id, date, name: name.trim(), is_optional: is_optional ?? false }, { onConflict: 'org_id,date' })
@@ -47,7 +47,7 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   await supabase.from('holidays').delete().eq('id', id).eq('org_id', ctx.org.id);
   return NextResponse.json({ ok: true });
 }

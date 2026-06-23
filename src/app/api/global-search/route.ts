@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const q = (searchParams.get('q') ?? '').trim();
   if (q.length < 2) return NextResponse.json({ results: [] });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const orgId = ctx.org.id;
   const like  = `%${q}%`;
 
@@ -72,17 +72,17 @@ export async function GET(req: NextRequest) {
     ctx.enabledModules.has('meetings')
       ? supabase
           .from('meetings')
-          .select('id, title, scheduled_at, status')
+          .select('id, title, meeting_date')
           .eq('org_id', orgId)
           .ilike('title', like)
-          .order('scheduled_at', { ascending: false })
+          .order('meeting_date', { ascending: false })
           .limit(5)
       : Promise.resolve({ data: [] }),
     // docs
     ctx.enabledModules.has('docs')
       ? supabase
-          .from('documents')
-          .select('id, title, type')
+          .from('docs')
+          .select('id, title, doc_type')
           .eq('org_id', orgId)
           .ilike('title', like)
           .order('updated_at', { ascending: false })
@@ -151,8 +151,8 @@ export async function GET(req: NextRequest) {
       type: 'meeting',
       id: m.id,
       title: m.title,
-      subtitle: `meeting · ${m.status ?? 'scheduled'}`,
-      href: `/dashboard/meetings/${m.id}`,
+      subtitle: `meeting · ${m.meeting_date ?? ''}`,
+      href: `/dashboard/meetings`,
     });
   }
   for (const d of (docsRes.data ?? []) as any[]) {
@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
       type: 'doc',
       id: d.id,
       title: d.title,
-      subtitle: `doc · ${d.type ?? 'document'}`,
+      subtitle: `doc · ${d.doc_type ?? 'doc'}`,
       href: `/dashboard/docs/${d.id}`,
     });
   }

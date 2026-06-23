@@ -15,7 +15,7 @@ export default async function ReportsPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('reports') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const orgId = ctx.org.id;
 
   const [

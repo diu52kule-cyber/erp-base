@@ -22,21 +22,60 @@ const THEMES = [
   { key: 'system', label: 'System' },
 ];
 
+function savePreference(key: string, value: string) {
+  fetch('/api/settings/preferences', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value }),
+  }).catch(() => {});
+}
+
 export default function PreferencesClient() {
   const [font, setFont] = useState('system');
   const [size, setSize] = useState('default');
   const [theme, setTheme] = useState('system');
 
-  // Load current values from what's applied / stored
   useEffect(() => {
-    const storedFont = localStorage.getItem('app-font');
-    const f = FONTS.find((x) => x.stack === storedFont);
-    if (f) setFont(f.key);
-    const storedSize = localStorage.getItem('app-font-size');
-    const s = SIZES.find((x) => x.px === storedSize);
-    if (s) setSize(s.key);
-    const t = localStorage.getItem('theme');
-    setTheme(t === 'dark' ? 'dark' : t === 'light' ? 'light' : 'system');
+    // Load from DB first, fall back to localStorage
+    fetch('/api/settings/preferences')
+      .then((r) => r.json())
+      .then((prefs: Record<string, string>) => {
+        if (prefs['app-font-key']) {
+          const f = FONTS.find((x) => x.key === prefs['app-font-key']);
+          if (f) { setFont(f.key); localStorage.setItem('app-font', f.stack); document.documentElement.style.setProperty('--app-font', f.stack); }
+        } else {
+          const storedFont = localStorage.getItem('app-font');
+          const f = FONTS.find((x) => x.stack === storedFont);
+          if (f) setFont(f.key);
+        }
+        if (prefs['app-size-key']) {
+          const s = SIZES.find((x) => x.key === prefs['app-size-key']);
+          if (s) { setSize(s.key); localStorage.setItem('app-font-size', s.px); document.documentElement.style.setProperty('--app-font-size', s.px); }
+        } else {
+          const storedSize = localStorage.getItem('app-font-size');
+          const s = SIZES.find((x) => x.px === storedSize);
+          if (s) setSize(s.key);
+        }
+        if (prefs['theme']) {
+          const t = prefs['theme'];
+          setTheme(t);
+          localStorage.setItem('theme', t);
+          document.documentElement.classList.toggle('dark', t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme:dark)').matches));
+        } else {
+          const t = localStorage.getItem('theme');
+          setTheme(t === 'dark' ? 'dark' : t === 'light' ? 'light' : 'system');
+        }
+      })
+      .catch(() => {
+        const storedFont = localStorage.getItem('app-font');
+        const f = FONTS.find((x) => x.stack === storedFont);
+        if (f) setFont(f.key);
+        const storedSize = localStorage.getItem('app-font-size');
+        const s = SIZES.find((x) => x.px === storedSize);
+        if (s) setSize(s.key);
+        const t = localStorage.getItem('theme');
+        setTheme(t === 'dark' ? 'dark' : t === 'light' ? 'light' : 'system');
+      });
   }, []);
 
   function applyFont(key: string) {
@@ -44,12 +83,14 @@ export default function PreferencesClient() {
     const f = FONTS.find((x) => x.key === key)!;
     localStorage.setItem('app-font', f.stack);
     document.documentElement.style.setProperty('--app-font', f.stack);
+    savePreference('app-font-key', key);
   }
   function applySize(key: string) {
     setSize(key);
     const s = SIZES.find((x) => x.key === key)!;
     localStorage.setItem('app-font-size', s.px);
     document.documentElement.style.setProperty('--app-font-size', s.px);
+    savePreference('app-size-key', key);
   }
   function applyTheme(key: string) {
     setTheme(key);
@@ -61,6 +102,7 @@ export default function PreferencesClient() {
       localStorage.setItem('theme', key);
       d.classList.toggle('dark', key === 'dark');
     }
+    savePreference('theme', key);
   }
   function reset() {
     localStorage.removeItem('app-font');
@@ -70,6 +112,9 @@ export default function PreferencesClient() {
     document.documentElement.style.removeProperty('--app-font-size');
     document.documentElement.classList.toggle('dark', window.matchMedia('(prefers-color-scheme:dark)').matches);
     setFont('system'); setSize('default'); setTheme('system');
+    savePreference('theme', 'system');
+    savePreference('app-font-key', 'system');
+    savePreference('app-size-key', 'default');
   }
 
   return (

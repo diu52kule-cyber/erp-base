@@ -13,10 +13,10 @@ export default async function TasksPage({ searchParams }: { searchParams: { spri
   const supabase = createClient();
   const [{ data: tasks }, { data: sprints }, members] = await Promise.all([
     supabase.from("tasks")
-      .select("id, title, status, priority, assignee_id, due_date, sprint_id")
+      .select("id, title, status, priority, assignee_id, due_date, sprint_id, estimated_hours, parent_task_id")
       .eq("org_id", ctx.org.id)
       .order("created_at", { ascending: false }),
-    supabase.from("sprints").select("id, name, status").eq("org_id", ctx.org.id).order("created_at", { ascending: false }),
+    supabase.from("sprints").select("id, name, status, start_date, end_date").eq("org_id", ctx.org.id).order("created_at", { ascending: false }),
     getOrgMembers(ctx.org.id),
   ]);
 

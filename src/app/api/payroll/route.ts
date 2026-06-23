@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const { month, working_days } = await req.json();
   if (!month) return NextResponse.json({ error: 'Month is required' }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const wDays = parseInt(working_days) || 26;
 
   // Fetch active employees (with basic_pct)

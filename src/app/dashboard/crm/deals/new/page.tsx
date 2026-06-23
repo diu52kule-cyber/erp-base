@@ -10,7 +10,7 @@ export default async function NewDealPage({ searchParams }: { searchParams: Prom
   if (!ctx?.enabledModules.has('crm') || !ctx.org) redirect('/dashboard');
 
   const { contact } = await searchParams;
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: contacts } = await supabase
     .from('contacts')
     .select('id, name, company, type')

@@ -8,7 +8,7 @@ export default async function NewPayrollPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('hr') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { count } = await supabase
     .from('employees')
     .select('*', { count: 'exact', head: true })

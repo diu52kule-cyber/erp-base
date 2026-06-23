@@ -10,7 +10,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: { p
   if (!ctx?.org) redirect('/login');
   if (!ALLOWED.includes(ctx.org.role as OrgRole)) redirect('/dashboard/settings/preferences');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const page   = Math.max(0, parseInt(searchParams.page ?? '0', 10));
   const table  = searchParams.table ?? '';
   const limit  = 50;

@@ -12,7 +12,7 @@ export default async function POSSessionDetailPage({ params }: { params: { id: s
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('pos') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const [{ data: session }, { data: orders }, { data: movements }] = await Promise.all([
     supabase.from('pos_sessions').select('*').eq('id', params.id).eq('org_id', ctx.org.id).maybeSingle(),
     supabase.from('pos_orders').select('order_number,total,payment_method,order_type,split_tenders,created_at')

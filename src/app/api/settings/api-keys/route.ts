@@ -9,7 +9,7 @@ export async function GET() {
   const ctx = await getOrgContext();
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!canManageRoles(ctx.org.role as OrgRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase.from('api_keys').select('id,name,key_prefix,active,created_at')
     .eq('org_id', ctx.org.id).order('created_at', { ascending: false });
   return NextResponse.json(data ?? []);
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const prefix = rawKey.slice(0, 12);
   const hash = crypto.createHash('sha256').update(rawKey).digest('hex');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase.from('api_keys')
     .insert({ org_id: ctx.org.id, name, key_prefix: prefix, key_hash: hash, active: true })
     .select('id,name,key_prefix,active,created_at').single();
@@ -39,7 +39,7 @@ export async function DELETE(req: NextRequest) {
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!canManageRoles(ctx.org.role as OrgRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await req.json();
-  const supabase = await createClient();
+  const supabase = createClient();
   await supabase.from('api_keys').update({ active: false }).eq('id', id).eq('org_id', ctx.org.id);
   return NextResponse.json({ success: true });
 }

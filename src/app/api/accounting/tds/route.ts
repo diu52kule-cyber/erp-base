@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get('type'); // 'payable' | 'receivable' | null (all)
 
-  const supabase = await createClient();
+  const supabase = createClient();
   let q = supabase
     .from('tds_entries')
     .select('*')
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data, error } = await supabase
     .from('tds_entries')
@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const { id, status, challan_no, deposited_date } = body;
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase
     .from('tds_entries')
     .update({ status, challan_no: challan_no ?? null, deposited_date: deposited_date ?? null })

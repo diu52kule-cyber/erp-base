@@ -12,7 +12,7 @@ export default async function IssuesPage() {
 
   const supabase = createClient();
   const [{ data: issues }, members] = await Promise.all([
-    supabase.from("issues").select("id, title, severity, status, module, assignee_id, created_at")
+    supabase.from("issues").select("id, title, severity, status, module, assignee_id, created_at, description, environment, priority, due_date")
       .eq("org_id", ctx.org.id).order("created_at", { ascending: false }),
     getOrgMembers(ctx.org.id),
   ]);

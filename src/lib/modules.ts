@@ -25,6 +25,7 @@ export const MODULES: ModuleDef[] = [
   { key: "import",        name: "Data Import",           href: "/dashboard/import",        icon: "⬆️", category: "business" },
 
   // ── Workspace / Startup OS ──
+  { key: "workspace", name: "My Work",             href: "/dashboard/workspace", icon: "🏠", category: "workspace" },
   { key: "projects",  name: "Projects",            href: "/dashboard/projects",  icon: "📊", category: "workspace" },
   { key: "docs",      name: "Docs & Knowledge",    href: "/dashboard/docs",      icon: "📚", category: "workspace" },
   { key: "tasks",     name: "Tasks & Sprints",     href: "/dashboard/tasks",     icon: "✅", category: "workspace" },

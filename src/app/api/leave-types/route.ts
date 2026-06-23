@@ -7,7 +7,7 @@ export async function GET() {
   if (!ctx?.org || !ctx.enabledModules.has('hr')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase
     .from('leave_types')
     .select('*')
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const { name, days_per_year, paid } = body;
   if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('leave_types')
     .insert({ org_id: ctx.org.id, name: name.trim(), days_per_year: days_per_year ?? 0, paid: paid ?? true })

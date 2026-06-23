@@ -7,7 +7,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
   const update: Record<string, unknown> = {};
-  for (const k of ['status', 'severity', 'assignee_id', 'title', 'description', 'module']) {
+  for (const k of ['status', 'severity', 'assignee_id', 'title', 'description', 'module', 'environment', 'priority', 'due_date']) {
     if (body[k] !== undefined) update[k] = body[k] || null;
   }
   const supabase = createClient();

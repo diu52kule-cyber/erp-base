@@ -9,7 +9,7 @@ export default async function NewSubscriptionPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('subscriptions') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase.from('subscription_plans').select('*').eq('org_id', ctx.org.id).eq('is_active', true).order('price');
   const plans = (data ?? []) as SubscriptionPlan[];
 

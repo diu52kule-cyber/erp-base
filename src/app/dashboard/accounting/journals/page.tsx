@@ -4,6 +4,9 @@ import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import { getFYDateRange } from '@/lib/types/accounting';
 import JournalsClient from './JournalsClient';
+import NavSelect from '@/components/NavSelect';
+
+export const dynamic = 'force-dynamic';
 
 export default async function JournalsPage({ searchParams }: { searchParams: { fy?: string } }) {
   const ctx = await getOrgContext();
@@ -15,7 +18,7 @@ export default async function JournalsPage({ searchParams }: { searchParams: { f
   const { start, end } = getFYDateRange(fy);
   const fyLabel = `${fy}-${String(Number(fy) + 1).slice(-2)}`;
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   let journals: any[] = [];
   let accounts: any[] = [];
@@ -44,13 +47,10 @@ export default async function JournalsPage({ searchParams }: { searchParams: { f
           <h1 className="mt-1 text-2xl font-semibold">Journal Entries</h1>
           <p className="mt-0.5 text-sm text-neutral-500">FY {fyLabel} — manual double-entry</p>
         </div>
-        <select
-          defaultValue={fy}
-          onChange={(e) => { window.location.href = `/dashboard/accounting/journals?fy=${e.target.value}`; }}
-          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-        >
-          {fyOptions.map((f) => <option key={f} value={f}>FY {f}-{String(Number(f) + 1).slice(-2)}</option>)}
-        </select>
+        <NavSelect
+          name="fy" value={fy} baseHref="/dashboard/accounting/journals"
+          options={fyOptions.map((f) => ({ value: f, label: `FY ${f}-${String(Number(f) + 1).slice(-2)}` }))}
+        />
       </div>
 
       {accounts.length === 0 ? (

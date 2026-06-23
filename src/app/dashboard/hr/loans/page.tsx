@@ -12,7 +12,7 @@ export default async function LoansPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('hr') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   let loans: any[] = [];
   let employees: { id: string; name: string; department?: string }[] = [];

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     overtime_hours?: number;
   }> = Array.isArray(body) ? body : [body];
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase
     .from('attendance')
     .upsert(

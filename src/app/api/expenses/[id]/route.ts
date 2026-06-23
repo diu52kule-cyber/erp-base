@@ -6,7 +6,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const ctx = await getOrgContext();
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const supabase = await createClient();
+  const supabase = createClient();
   const updates: Record<string, unknown> = { status: body.status };
   if (['approved', 'rejected'].includes(body.status)) {
     updates.reviewed_by  = ctx.user.id;

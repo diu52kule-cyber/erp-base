@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import { getFYDateRange } from '@/lib/types/accounting';
+import NavSelect from '@/components/NavSelect';
+
+export const dynamic = 'force-dynamic';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Math.abs(n));
@@ -18,14 +21,14 @@ export default async function BalanceSheetPage({ searchParams }: { searchParams:
   const { start, end } = getFYDateRange(fy);
   const fyLabel = `${fy}-${String(Number(fy) + 1).slice(-2)}`;
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const [invRes, paymentsRes, posRes, expRes, payrollRes, purchRes] = await Promise.all([
     supabase.from('invoices').select('total,gst_amount,amount_paid,status,issue_date')
       .eq('org_id', ctx.org.id).eq('doc_type', 'invoice')
       .in('status', ['sent','paid','partial']).lte('issue_date', end),
-    supabase.from('payments').select('amount,payment_date')
-      .eq('org_id', ctx.org.id).lte('payment_date', end),
+    supabase.from('payments').select('amount,paid_at')
+      .eq('org_id', ctx.org.id).lte('paid_at', end),
     supabase.from('pos_orders').select('total,created_at')
       .eq('org_id', ctx.org.id).lte('created_at', end),
     supabase.from('expense_claims').select('amount,status,claim_date')
@@ -133,13 +136,10 @@ export default async function BalanceSheetPage({ searchParams }: { searchParams:
           <h1 className="mt-1 text-2xl font-semibold">Balance Sheet</h1>
           <p className="mt-0.5 text-sm text-neutral-500">As at end of FY {fyLabel}</p>
         </div>
-        <select
-          value={fy}
-          onChange={(e) => { window.location.href = `/dashboard/accounting/balance-sheet?fy=${e.target.value}`; }}
-          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-        >
-          {fyOptions.map((f) => <option key={f} value={f}>FY {f}-{String(Number(f) + 1).slice(-2)}</option>)}
-        </select>
+        <NavSelect
+          name="fy" value={fy} baseHref="/dashboard/accounting/balance-sheet"
+          options={fyOptions.map((f) => ({ value: f, label: `FY ${f}-${String(Number(f) + 1).slice(-2)}` }))}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-4">

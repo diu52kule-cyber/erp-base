@@ -13,7 +13,7 @@ export default async function DealsPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('crm') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase
     .from('deals')
     .select('*, contact:contacts(name, company)')

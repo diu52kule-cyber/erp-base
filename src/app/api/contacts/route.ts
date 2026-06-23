@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Duplicate detection: check email or phone match
   let duplicate: { id: string; name: string } | null = null;

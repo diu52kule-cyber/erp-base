@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Sign the user in so they get a session cookie
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
   if (signInErr) {
     return NextResponse.json({ error: signInErr.message }, { status: 400 });

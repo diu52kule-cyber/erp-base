@@ -13,9 +13,9 @@ export default async function CheckinsPage() {
   const today = new Date().toISOString().split("T")[0];
   const supabase = createClient();
   const [{ data: todays }, { data: mine }, members] = await Promise.all([
-    supabase.from("checkins").select("user_id, yesterday, today, blockers, created_at")
+    supabase.from("checkins").select("user_id, yesterday, today, blockers, mood, created_at")
       .eq("org_id", ctx.org.id).eq("checkin_date", today),
-    supabase.from("checkins").select("yesterday, today, blockers")
+    supabase.from("checkins").select("yesterday, today, blockers, mood")
       .eq("org_id", ctx.org.id).eq("user_id", ctx.user.id).eq("checkin_date", today).maybeSingle(),
     getOrgMembers(ctx.org.id),
   ]);

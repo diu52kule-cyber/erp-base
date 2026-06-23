@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const { plan_id, customer_name, customer_email, status, starts_at, notes } = await req.json();
   if (!customer_name?.trim()) return NextResponse.json({ error: 'Customer name required' }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Calculate next billing date from plan cycle
   let next_billing_at: string | null = null;

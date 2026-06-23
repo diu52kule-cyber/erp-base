@@ -11,7 +11,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default async function ProjectsPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('projects') || !ctx.org) redirect('/dashboard');
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: projects } = await supabase.from('projects')
     .select('*, client:contacts(name), tasks(id,status), time_entries(minutes,billable)')
     .eq('org_id', ctx.org.id).order('created_at', { ascending: false });

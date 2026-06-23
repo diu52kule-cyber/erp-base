@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import { getFYDateRange } from '@/lib/types/accounting';
+import NavSelect from '@/components/NavSelect';
+
+export const dynamic = 'force-dynamic';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -18,7 +21,7 @@ export default async function PnLPage({ searchParams }: { searchParams: { fy?: s
   const { start, end } = getFYDateRange(fy);
   const fyLabel = `${fy}-${String(Number(fy) + 1).slice(-2)}`;
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const [invRes, posRes, expenseRes, payrollRes, purchaseRes] = await Promise.all([
     supabase.from('invoices').select('total,gst_amount,status,issue_date,doc_type')
@@ -103,13 +106,10 @@ export default async function PnLPage({ searchParams }: { searchParams: { fy?: s
           <h1 className="mt-1 text-2xl font-semibold">Profit &amp; Loss Statement</h1>
           <p className="mt-0.5 text-sm text-neutral-500">FY {fyLabel}</p>
         </div>
-        <select
-          value={fy}
-          onChange={(e) => { window.location.href = `/dashboard/accounting/pnl?fy=${e.target.value}`; }}
-          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-        >
-          {fyOptions.map((f) => <option key={f} value={f}>FY {f}-{String(Number(f) + 1).slice(-2)}</option>)}
-        </select>
+        <NavSelect
+          name="fy" value={fy} baseHref="/dashboard/accounting/pnl"
+          options={fyOptions.map((f) => ({ value: f, label: `FY ${f}-${String(Number(f) + 1).slice(-2)}` }))}
+        />
       </div>
 
       {/* Summary tiles */}

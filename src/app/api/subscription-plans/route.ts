@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   const { name, description, price, billing_cycle, features } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('subscription_plans')
     .insert({

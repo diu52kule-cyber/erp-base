@@ -8,7 +8,7 @@ function fmt(n: number) { return '₹' + Number(n).toLocaleString('en-IN', { min
 export default async function POSSessionsPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('pos') || !ctx.org) redirect('/dashboard');
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: sessions } = await supabase.from('pos_sessions').select('*')
     .eq('org_id', ctx.org.id).order('opened_at', { ascending: false }).limit(30);
 

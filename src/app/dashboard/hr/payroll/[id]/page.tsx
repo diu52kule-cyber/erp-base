@@ -14,7 +14,7 @@ export default async function PayrollRunPage({ params }: { params: Promise<{ id:
   if (!ctx?.enabledModules.has('hr') || !ctx.org) redirect('/dashboard');
 
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const [{ data: run }, { data: entries }] = await Promise.all([
     supabase.from('payroll_runs').select('*').eq('id', id).eq('org_id', ctx.org.id).single(),

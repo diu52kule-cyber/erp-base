@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   if (!ctx?.org || !ctx.enabledModules.has('hr')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const supabase = await createClient();
+  const supabase = createClient();
   const employeeId = req.nextUrl.searchParams.get('employee_id');
   let q = supabase
     .from('leave_requests')
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Employee, leave type, start and end date required' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('leave_requests')
     .insert({

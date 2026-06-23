@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const contact_id = req.nextUrl.searchParams.get('contact_id');
   if (!contact_id) return NextResponse.json({ error: 'contact_id required' }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase
     .from('contact_activities')
     .select('*')
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'contact_id, type and body required' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('contact_activities')
     .insert({

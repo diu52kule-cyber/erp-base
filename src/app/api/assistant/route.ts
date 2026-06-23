@@ -147,7 +147,30 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // A4: Check monthly token cap
+  const supabase = createClient();
   try {
+    const { data: plan } = await supabase.from('org_plans').select('ai_tokens_used_month,ai_tokens_cap_month,ai_token_reset_date').eq('org_id', ctx.org.id).maybeSingle();
+    if (plan) {
+      const resetDate = new Date(plan.ai_token_reset_date ?? '2000-01-01');
+      const now = new Date();
+      const shouldReset = now.getFullYear() > resetDate.getFullYear() || now.getMonth() > resetDate.getMonth();
+      if (shouldReset) {
+        await supabase.from('org_plans').update({ ai_tokens_used_month: 0, ai_token_reset_date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01` }).eq('org_id', ctx.org.id);
+      } else if ((plan.ai_tokens_used_month ?? 0) >= (plan.ai_tokens_cap_month ?? 100000)) {
+        return NextResponse.json({ error: 'Monthly AI token limit reached. Contact support to increase your limit.' }, { status: 429 });
+      }
+    }
+  } catch { /* non-fatal — proceed */ }
+
+  try {
+    const systemPrompt =
+      `You are the AI business assistant for "${ctx.org.name}" (${(ctx.org as any).business_type ?? 'general'} business). ` +
+      `You have access to a live workspace snapshot from their ERP system. ` +
+      `Answer concisely and practically using the snapshot. If data is absent, say so. ` +
+      `Format with short bullets. Prioritize urgent items (overdue, blocked, critical) in answers.\n\n` +
+      `LIVE WORKSPACE SNAPSHOT:\n${snapshot}`;
+
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -158,12 +181,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 800,
-        system:
-          `You are the AI business assistant for "${ctx.org.name}" (${(ctx.org as any).business_type ?? 'general'} business). ` +
-          `You have access to a live workspace snapshot from their ERP system. ` +
-          `Answer concisely and practically using the snapshot. If data is absent, say so. ` +
-          `Format with short bullets. Prioritize urgent items (overdue, blocked, critical) in answers.\n\n` +
-          `LIVE WORKSPACE SNAPSHOT:\n${snapshot}`,
+        system: systemPrompt,
         messages: [{ role: 'user', content: question }],
       }),
     });
@@ -174,6 +192,17 @@ export async function POST(req: NextRequest) {
     }
     const data = await res.json();
     const answer = (data.content ?? []).map((b: { text?: string }) => b.text ?? '').join('').trim();
+
+    // A4: Log usage
+    const tokensIn  = data.usage?.input_tokens  ?? 0;
+    const tokensOut = data.usage?.output_tokens ?? 0;
+    try {
+      await Promise.all([
+        supabase.from('ai_usage').insert({ org_id: ctx.org.id, user_id: ctx.user.id, tokens_in: tokensIn, tokens_out: tokensOut }),
+        supabase.rpc('increment_ai_tokens', { p_org_id: ctx.org.id, p_tokens: tokensIn + tokensOut }),
+      ]);
+    } catch { /* non-fatal */ }
+
     return NextResponse.json({ answer, snapshotLines: snapshot.split('\n').length });
   } catch {
     return NextResponse.json({ error: 'Could not reach the AI service.' }, { status: 500 });

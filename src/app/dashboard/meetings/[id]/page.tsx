@@ -13,7 +13,7 @@ export default async function MeetingDetailPage({ params }: { params: { id: stri
 
   const supabase = createClient();
   const { data: meeting } = await supabase.from("meetings")
-    .select("id, title, meeting_date, agenda, notes").eq("id", params.id).single();
+    .select("id, title, meeting_date, agenda, notes, attendees, is_recurring, recurrence_rule").eq("id", params.id).single();
   if (!meeting) notFound();
 
   const [{ data: items }, members] = await Promise.all([

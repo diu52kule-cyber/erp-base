@@ -14,7 +14,7 @@ export default async function SubscriptionDetailPage({ params }: { params: { id:
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('subscriptions') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase.from('customer_subscriptions')
     .select('*, plan:subscription_plans(*)')
     .eq('id', params.id).eq('org_id', ctx.org.id).single();

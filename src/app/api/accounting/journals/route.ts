@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get('from') ?? new Date(new Date().getFullYear(), 3, 1).toISOString().split('T')[0];
   const to   = searchParams.get('to')   ?? new Date().toISOString().split('T')[0];
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('journal_entries')
     .select('*, lines:journal_entry_lines(*, account:chart_of_accounts(code,name,type))')
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Entry is not balanced: Dr ${totalDebit} ≠ Cr ${totalCredit}` }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: je, error: jeErr } = await supabase
     .from('journal_entries')
     .insert({ org_id: ctx.org.id, entry_date, reference, narration, auto_posted: false, created_by: ctx.user.id })

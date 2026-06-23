@@ -12,7 +12,7 @@ export default async function PayrollPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('hr') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase
     .from('payroll_runs')
     .select('*')

@@ -6,11 +6,17 @@ import { DOC_TYPES, type DocType } from '@/lib/invoice/docTypes';
 
 export default function InvoiceActions({
   invoiceId, docType, status, hasEmail,
+  invoiceNumber, customerName, customerPhone, total, sellerName,
 }: {
   invoiceId: string;
   docType: DocType;
   status: string;
   hasEmail: boolean;
+  invoiceNumber?: string;
+  customerName?: string;
+  customerPhone?: string | null;
+  total?: number;
+  sellerName?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const isInvoice = docType === 'invoice';
@@ -59,10 +65,32 @@ export default function InvoiceActions({
 
   const btn = 'rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50 disabled:opacity-50';
 
+  function shareWhatsApp() {
+    const num = (total ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    const payUrl = `${window.location.origin}/pay/${invoiceId}`;
+    const lines = [
+      `Hi${customerName ? ` ${customerName}` : ''}!`,
+      ``,
+      `Please find your invoice *${invoiceNumber ?? ''}* from *${sellerName ?? ''}*`,
+      `Amount: ₹${num}`,
+      ``,
+      `Pay online: ${payUrl}`,
+    ];
+    const text = lines.join('\n');
+    const phone = customerPhone?.replace(/\D/g, '') ?? '';
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <a href={`/api/invoices/${invoiceId}/pdf`} target="_blank" rel="noopener noreferrer" className={btn}>Download PDF</a>
       {hasEmail && <button onClick={sendEmail} disabled={busy} className={btn}>Email</button>}
+      {isInvoice && (
+        <button onClick={shareWhatsApp}
+          className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 hover:bg-green-100">
+          💬 WhatsApp
+        </button>
+      )}
       {isInvoice && ['sent', 'partial'].includes(status) && (
         <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/pay/${invoiceId}`); toast('Payment link copied!'); }}
           className={btn}>Copy Pay Link</button>

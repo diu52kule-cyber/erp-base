@@ -36,12 +36,36 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
   if (!ctx?.enabledModules.has('crm') || !ctx.org) redirect('/dashboard');
 
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const [{ data: contact }, { data: deals }] = await Promise.all([
     supabase.from('contacts').select('*').eq('id', id).eq('org_id', ctx.org.id).single(),
     supabase.from('deals').select('*').eq('contact_id', id).eq('org_id', ctx.org.id).order('created_at', { ascending: false }),
   ]);
+
+  // Fetch linked invoices + payments for this contact
+  let contactInvoices: { id: string; invoice_number: string; issue_date: string; total: number; status: string; amount_paid: number | null; due_date: string | null }[] = [];
+  let contactPayments: { id: string; paid_at: string; amount: number; method: string; notes: string | null }[] = [];
+  if (contact) {
+    try {
+      const { data: invs } = await supabase.from('invoices')
+        .select('id, invoice_number, issue_date, total, status, amount_paid, due_date')
+        .eq('org_id', ctx.org.id).eq('doc_type', 'invoice')
+        .ilike('customer_name', contact.name)
+        .order('issue_date', { ascending: false }).limit(10);
+      contactInvoices = (invs ?? []) as typeof contactInvoices;
+
+      // Fetch payments for those invoices
+      if (contactInvoices.length > 0) {
+        const invIds = contactInvoices.map(i => i.id);
+        const { data: pays } = await supabase.from('payments')
+          .select('id, paid_at, amount, method, notes')
+          .eq('org_id', ctx.org.id).in('invoice_id', invIds)
+          .order('paid_at', { ascending: false }).limit(10);
+        contactPayments = (pays ?? []) as typeof contactPayments;
+      }
+    } catch { /* billing module not enabled or tables missing */ }
+  }
 
   let activityList: Activity[] = [];
   try {
@@ -273,6 +297,106 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Billing History */}
+      {(contactInvoices.length > 0 || contactPayments.length > 0) && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Invoices */}
+          {contactInvoices.length > 0 && (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-medium">Invoices</h2>
+                <Link href={`/dashboard/billing?q=${encodeURIComponent(c.name)}`}
+                  className="text-xs text-neutral-400 hover:text-neutral-700">View all →</Link>
+              </div>
+              <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-neutral-100 bg-neutral-50 text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-950">
+                      <th className="px-4 py-3 text-left font-medium">Invoice</th>
+                      <th className="px-4 py-3 text-left font-medium">Date</th>
+                      <th className="px-4 py-3 text-right font-medium">Amount</th>
+                      <th className="px-4 py-3 text-left font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    {contactInvoices.map((inv) => {
+                      const statusColor: Record<string, string> = {
+                        paid: 'bg-green-50 text-green-700', sent: 'bg-blue-50 text-blue-700',
+                        partial: 'bg-amber-50 text-amber-700', draft: 'bg-neutral-100 text-neutral-500',
+                        cancelled: 'bg-neutral-100 text-neutral-400',
+                      };
+                      const balanceDue = Math.max(0, Number(inv.total) - Number(inv.amount_paid ?? 0));
+                      return (
+                        <tr key={inv.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                          <td className="px-4 py-3">
+                            <Link href={`/dashboard/billing/${inv.id}`} className="font-mono text-xs font-medium hover:text-indigo-600 hover:underline">
+                              {inv.invoice_number}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-neutral-500 text-xs">
+                            {new Date(inv.issue_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums">
+                            <span className="font-medium">{fmt(Number(inv.total))}</span>
+                            {balanceDue > 0 && inv.status !== 'cancelled' && (
+                              <span className="block text-xs text-amber-600">Due: {fmt(balanceDue)}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusColor[inv.status] ?? 'bg-neutral-100 text-neutral-500'}`}>
+                              {inv.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {/* Summary row */}
+                <div className="border-t border-neutral-100 dark:border-neutral-800 px-4 py-2 flex items-center justify-between text-xs text-neutral-500">
+                  <span>{contactInvoices.length} invoice{contactInvoices.length > 1 ? 's' : ''}</span>
+                  <span className="font-medium text-neutral-700 dark:text-neutral-300">
+                    Total billed: {fmt(contactInvoices.reduce((s, i) => s + Number(i.total), 0))}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Payments */}
+          {contactPayments.length > 0 && (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-medium">Payments Received</h2>
+                <span className="text-xs text-neutral-400">
+                  {fmt(contactPayments.reduce((s, p) => s + Number(p.amount), 0))} total
+                </span>
+              </div>
+              <div className="space-y-2">
+                {contactPayments.map((pay) => (
+                  <div key={pay.id}
+                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 text-green-600 text-xs">
+                        {pay.method === 'cash' ? '💵' : pay.method === 'upi' ? '📲' : pay.method === 'card' ? '💳' : '💰'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium capitalize">{pay.method}</p>
+                        <p className="text-xs text-neutral-400">{new Date(pay.paid_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-green-700">{fmt(Number(pay.amount))}</p>
+                      {pay.notes && <p className="text-xs text-neutral-400 truncate max-w-24">{pay.notes}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

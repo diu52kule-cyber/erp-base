@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const body = await req.json();
   const update: Record<string, unknown> = {};
-  for (const k of ['title', 'description', 'assignee_id', 'priority', 'status', 'due_date', 'sprint_id']) {
+  for (const k of ['title', 'description', 'assignee_id', 'priority', 'status', 'due_date', 'sprint_id', 'estimated_hours', 'parent_task_id']) {
     if (body[k] !== undefined) update[k] = body[k] || null;
   }
 

@@ -16,7 +16,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
   if (!ctx?.enabledModules.has('crm') || !ctx.org) redirect('/dashboard');
 
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase
     .from('deals')
     .select('*, contact:contacts(id, name, company, type)')

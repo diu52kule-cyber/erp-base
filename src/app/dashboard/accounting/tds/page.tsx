@@ -13,7 +13,7 @@ export default async function TdsPage({ searchParams }: { searchParams: { type?:
   if (!ctx?.enabledModules.has('accounting') || !ctx.org) redirect('/dashboard');
 
   const type = searchParams.type ?? 'payable';
-  const supabase = await createClient();
+  const supabase = createClient();
 
   let entries: any[] = [];
   try {

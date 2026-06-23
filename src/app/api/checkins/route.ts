@@ -5,7 +5,7 @@ import { getOrgContext } from '@/lib/entitlements';
 export async function POST(req: NextRequest) {
   const ctx = await getOrgContext();
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { yesterday, today, blockers } = await req.json();
+  const { yesterday, today, blockers, mood } = await req.json();
 
   const supabase = createClient();
   const { error } = await supabase.from('checkins').upsert({
@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     yesterday: yesterday || null,
     today: today || null,
     blockers: blockers || null,
+    mood: mood || null,
   }, { onConflict: 'org_id,user_id,checkin_date' });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

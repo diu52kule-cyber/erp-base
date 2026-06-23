@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const fyStart = `${startYear}-04-01`;
   const fyEnd   = `${parseInt(startYear) + 1}-03-31`;
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: runs } = await supabase
     .from('payroll_runs')

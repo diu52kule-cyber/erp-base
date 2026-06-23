@@ -10,7 +10,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('projects') || !ctx.org) redirect('/dashboard');
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createClient();
   const [{ data: project }, { data: tasks }, { data: time }] = await Promise.all([
     supabase.from('projects').select('*, client:contacts(id,name)').eq('id', id).eq('org_id', ctx.org.id).single(),
     supabase.from('tasks').select('*').eq('project_id', id).order('sort_order'),

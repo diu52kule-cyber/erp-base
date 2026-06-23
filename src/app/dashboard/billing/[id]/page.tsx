@@ -105,7 +105,17 @@ export default async function InvoiceDetailPage({
 
       {/* Management actions (not printed) */}
       <div className="no-print">
-        <InvoiceActions invoiceId={invoice.id} docType={docType} status={invoice.status} hasEmail={!!invoice.customer_email} />
+        <InvoiceActions
+          invoiceId={invoice.id}
+          docType={docType}
+          status={invoice.status}
+          hasEmail={!!invoice.customer_email}
+          invoiceNumber={invoice.invoice_number}
+          customerName={invoice.customer_name}
+          customerPhone={null}
+          total={invoice.total}
+          sellerName={sellerName}
+        />
       </div>
 
       {/* Document card (printable) */}

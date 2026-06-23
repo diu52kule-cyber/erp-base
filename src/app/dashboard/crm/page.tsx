@@ -22,7 +22,7 @@ export default async function CRMPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('crm') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const [{ data: contacts }, { data: deals }] = await Promise.all([
     supabase

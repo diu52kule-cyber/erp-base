@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Invalid stage' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Fetch current stage to detect transition
   const { data: deal } = await supabase

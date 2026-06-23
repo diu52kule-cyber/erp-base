@@ -13,7 +13,7 @@ export default async function SubscriptionsPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('subscriptions') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const [{ data: subs }, { data: plans }] = await Promise.all([
     supabase.from('customer_subscriptions').select('*, plan:subscription_plans(name,price,billing_cycle)')
       .eq('org_id', ctx.org.id).order('created_at', { ascending: false }),

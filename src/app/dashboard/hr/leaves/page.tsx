@@ -8,7 +8,7 @@ export default async function LeavesPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('hr') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   let leaves: any[] = [];
   let leaveTypes: any[] = [];

@@ -10,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase
     .from('customer_subscriptions')
     .update({ status: body.status, notes: body.notes, ends_at: body.ends_at || null })

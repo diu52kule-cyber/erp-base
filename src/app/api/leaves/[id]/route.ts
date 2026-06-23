@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: leave, error: fetchErr } = await supabase
     .from('leave_requests')

@@ -11,9 +11,9 @@ export default async function GoalsPage() {
 
   const supabase = createClient();
   const [{ data: goals }, { data: krs }] = await Promise.all([
-    supabase.from("goals").select("id, title, description, level, quarter, progress, status")
+    supabase.from("goals").select("id, title, description, level, quarter, progress, status, parent_id")
       .eq("org_id", ctx.org.id).order("created_at", { ascending: false }),
-    supabase.from("key_results").select("id, goal_id, title, target, current, unit").eq("org_id", ctx.org.id),
+    supabase.from("key_results").select("id, goal_id, title, target, current, unit, confidence").eq("org_id", ctx.org.id),
   ]);
 
   return <GoalsClient initialGoals={goals ?? []} initialKRs={krs ?? []} />;

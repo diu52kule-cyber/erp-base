@@ -7,7 +7,7 @@ import NewProjectForm from './NewProjectForm';
 export default async function NewProjectPage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('projects') || !ctx.org) redirect('/dashboard');
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: contacts } = await supabase.from('contacts').select('id,name')
     .eq('org_id', ctx.org.id).in('type', ['customer', 'lead']).order('name');
   return (

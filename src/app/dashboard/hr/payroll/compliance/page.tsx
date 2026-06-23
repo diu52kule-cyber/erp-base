@@ -9,7 +9,7 @@ export default async function CompliancePage() {
   const ctx = await getOrgContext();
   if (!ctx?.enabledModules.has('hr') || !ctx.org) redirect('/dashboard');
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data } = await supabase
     .from('statutory_settings')
     .select('*')

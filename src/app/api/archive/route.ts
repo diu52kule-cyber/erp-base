@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid table' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase
     .from(table)
     .update({ archived_at: archive ? new Date().toISOString() : null })

@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { getOrgContext } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/server';
 import { getFYDateRange } from '@/lib/types/accounting';
+import NavSelect from '@/components/NavSelect';
+
+export const dynamic = 'force-dynamic';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Math.abs(n));
@@ -18,7 +21,7 @@ export default async function TrialBalancePage({ searchParams }: { searchParams:
   const { start, end } = getFYDateRange(fy);
   const fyLabel = `${fy}-${String(Number(fy) + 1).slice(-2)}`;
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Fetch chart of accounts
   let coa: any[] = [];
@@ -36,8 +39,8 @@ export default async function TrialBalancePage({ searchParams }: { searchParams:
   const [invRes, paymentsRes, posRes, expenseRes, payrollRes, poRes] = await Promise.all([
     supabase.from('invoices').select('total,gst_amount,amount_paid,status,doc_type,issue_date')
       .eq('org_id', ctx.org.id).eq('doc_type', 'invoice').gte('issue_date', start).lte('issue_date', end),
-    supabase.from('payments').select('amount,method,payment_date')
-      .eq('org_id', ctx.org.id).gte('payment_date', start).lte('payment_date', end),
+    supabase.from('payments').select('amount,method,paid_at')
+      .eq('org_id', ctx.org.id).gte('paid_at', start).lte('paid_at', end),
     supabase.from('pos_orders').select('total,payment_method,created_at')
       .eq('org_id', ctx.org.id).gte('created_at', start).lte('created_at', end),
     supabase.from('expense_claims').select('amount,status,claim_date')
@@ -121,13 +124,10 @@ export default async function TrialBalancePage({ searchParams }: { searchParams:
           <p className="mt-0.5 text-sm text-neutral-500">FY {fyLabel} — all account balances</p>
         </div>
         <div className="flex items-center gap-3">
-          <select
-            value={fy}
-            onChange={(e) => { window.location.href = `/dashboard/accounting/trial-balance?fy=${e.target.value}`; }}
-            className="rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-          >
-            {fyOptions.map((f) => <option key={f} value={f}>FY {f}-{String(Number(f) + 1).slice(-2)}</option>)}
-          </select>
+          <NavSelect
+            name="fy" value={fy} baseHref="/dashboard/accounting/trial-balance"
+            options={fyOptions.map((f) => ({ value: f, label: `FY ${f}-${String(Number(f) + 1).slice(-2)}` }))}
+          />
         </div>
       </div>
 
