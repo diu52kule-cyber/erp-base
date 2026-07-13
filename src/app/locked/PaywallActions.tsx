@@ -31,7 +31,7 @@ export default function PaywallActions({ amount, period }: { amount: number; per
         order_id: data.order_id,
         amount: data.amount,
         currency: data.currency,
-        name: 'ERP Platform',
+        name: 'Gradia',
         description: `Subscription (${period})`,
         handler: () => {
           // Webhook activates the plan; poll briefly then reload.

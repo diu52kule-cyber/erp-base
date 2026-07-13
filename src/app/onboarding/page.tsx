@@ -58,7 +58,7 @@ export default function OnboardingPage() {
       {/* Header */}
       <header className="border-b border-neutral-200 bg-white px-8 py-4">
         <div className="mx-auto max-w-2xl flex items-center justify-between">
-          <span className="text-lg font-semibold">ERP Platform</span>
+          <span className="text-lg font-semibold">Gradia</span>
           {step < 4 && (
             <div className="flex items-center gap-2">
               {[1, 2, 3].map((s) => (
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
               <div>
                 <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider">Step 1 of 3</p>
                 <h1 className="mt-2 text-3xl font-bold text-neutral-900">Tell us about your business</h1>
-                <p className="mt-2 text-neutral-500">We'll personalise your ERP setup based on your business type.</p>
+                <p className="mt-2 text-neutral-500">We'll personalise your Gradia workspace based on your business type.</p>
               </div>
 
               <div>

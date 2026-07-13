@@ -102,7 +102,7 @@ export default function Home() {
       <footer className="border-t border-neutral-200">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-8 text-sm text-neutral-400 sm:flex-row">
           <Brand />
-          <p>© {new Date().getFullYear()} ERP Base. Built for Indian SMBs.</p>
+          <p>© {new Date().getFullYear()} Gradia. Built for Indian SMBs.</p>
         </div>
       </footer>
     </div>

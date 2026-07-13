@@ -10,7 +10,7 @@ export default async function TeamPage() {
   // Only the team-management tier (owner/admin/manager) may view this page.
   if (!canInvite(ctx.org.role as OrgRole)) redirect('/dashboard/settings/preferences');
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://erp-base-eight.vercel.app';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
   return (
     <div className="space-y-6">

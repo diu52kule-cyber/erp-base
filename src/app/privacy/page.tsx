@@ -1,4 +1,4 @@
-export const metadata = { title: 'Privacy Policy — ERP Base' };
+export const metadata = { title: 'Privacy Policy — Gradia' };
 
 export default function PrivacyPage() {
   return (
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-3">2. How We Use Your Information</h2>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Provide and improve the ERP Base platform</li>
+              <li>Provide and improve the Gradia platform</li>
               <li>Send transactional emails (invoices, receipts, password resets)</li>
               <li>Detect and prevent fraud or unauthorised access</li>
               <li>Comply with legal obligations under Indian law (IT Act 2000, GST rules)</li>

@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       // Send welcome email with credentials (best-effort)
       const resendKey = process.env.RESEND_API_KEY;
       const fromEmail = process.env.RESEND_FROM_EMAIL;
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://erp-base-eight.vercel.app';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
       if (resendKey && fromEmail) {
         try {
           const { Resend } = await import('resend');

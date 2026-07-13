@@ -171,7 +171,7 @@ export default async function EmployeeSelfServicePage({ params }: { params: { to
           </div>
         )}
 
-        <p className="text-xs text-center text-neutral-300">Powered by ERP Base · Private link — do not share</p>
+        <p className="text-xs text-center text-neutral-300">Powered by Gradia · Private link — do not share</p>
       </div>
     </div>
   );

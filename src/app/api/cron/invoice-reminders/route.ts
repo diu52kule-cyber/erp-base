@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   }
 
   const resendKey  = process.env.RESEND_API_KEY;
-  const fromEmail  = process.env.RESEND_FROM_EMAIL ?? 'invoices@erp-base.com';
+  const fromEmail  = process.env.RESEND_FROM_EMAIL ?? 'invoices@gradia.in';
   if (!resendKey) {
     return NextResponse.json({ skipped: true, reason: 'RESEND_API_KEY not set' });
   }
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
     const balanceDue  = Math.max(0, (inv.total ?? 0) - (inv.amount_paid ?? 0));
     const daysOverdue = Math.floor((Date.now() - new Date(inv.due_date).getTime()) / 86400_000);
-    const payUrl      = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://erp-base-eight.vercel.app'}/pay/${inv.id}`;
+    const payUrl      = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/pay/${inv.id}`;
 
     try {
       await resend.emails.send({

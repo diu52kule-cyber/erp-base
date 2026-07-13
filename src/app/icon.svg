@@ -1,14 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#6366f1"/>
-      <stop offset="1" stop-color="#7c3aed"/>
+    <!-- Main face gradient: deep blue → teal → bright green, diagonal -->
+    <linearGradient id="gm" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#1338BE"/>
+      <stop offset="28%"  stop-color="#0771C8"/>
+      <stop offset="60%"  stop-color="#079E8C"/>
+      <stop offset="100%" stop-color="#0DC87A"/>
     </linearGradient>
+    <!-- Top face gradient: lighter/brighter version of same palette -->
+    <linearGradient id="gt" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#4A6FE8"/>
+      <stop offset="28%"  stop-color="#19AAEF"/>
+      <stop offset="60%"  stop-color="#1DCFB5"/>
+      <stop offset="100%" stop-color="#3DEBA4"/>
+    </linearGradient>
+    <!-- Clip to staircase front-face area only (for the white stripe) -->
+    <clipPath id="sc">
+      <path d="M0 100 L0 75 L30 75 L30 50 L60 50 L60 25 L90 25 L90 0 L120 0 L120 100 Z"/>
+    </clipPath>
   </defs>
-  <rect width="32" height="32" rx="8" fill="url(#g)"/>
-  <g stroke="#ffffff" stroke-width="2.4" stroke-linecap="round">
-    <line x1="9" y1="11" x2="23" y2="11"/>
-    <line x1="9" y1="16" x2="23" y2="16"/>
-    <line x1="9" y1="21" x2="18" y2="21"/>
-  </g>
+
+  <!-- ── MAIN FRONT FACES ─────────────────────────────────── -->
+  <!-- 4 column-blocks, all sharing bottom at y=100,
+       each 30px wide, heights 25/50/75/100 -->
+  <path d="M0 100 L0 75 L30 75 L30 50 L60 50 L60 25 L90 25 L90 0 L120 0 L120 100 Z"
+        fill="url(#gm)"/>
+
+  <!-- ── TOP FACES (3-D depth illusion) ───────────────────── -->
+  <!-- Extrusion vector: +8px right, −8px up                   -->
+  <!-- Each top face is a trapezoid clipped at the adjacent    -->
+  <!-- block's left edge so it doesn't spill over              -->
+
+  <!-- Block 1 top  (tread at y=75, x=0→30) -->
+  <polygon points="0,75  30,75  30,67  8,67"
+           fill="url(#gt)" opacity="0.80"/>
+
+  <!-- Block 2 top  (tread at y=50, x=30→60) -->
+  <polygon points="30,50  60,50  60,42  38,42"
+           fill="url(#gt)" opacity="0.80"/>
+
+  <!-- Block 3 top  (tread at y=25, x=60→90) -->
+  <polygon points="60,25  90,25  90,17  68,17"
+           fill="url(#gt)" opacity="0.80"/>
+
+  <!-- Block 4 top  (tread at y=0, x=90→120 — clip at top edge) -->
+  <polygon points="90,0  120,0  120,-8  98,-8"
+           fill="url(#gt)" opacity="0.80"
+           clip-path="url(#sc)"/>
+
+  <!-- ── WHITE DIAGONAL ARROW STRIPE ─────────────────────── -->
+  <!-- Parallelogram from lower-left → upper-right,
+       clipped to the staircase front-face shape              -->
+  <polygon points="0,85  15,100  120,15  105,0"
+           fill="white" opacity="0.93"
+           clip-path="url(#sc)"/>
 </svg>

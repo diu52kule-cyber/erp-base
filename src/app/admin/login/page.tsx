@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
             </svg>
           </div>
           <h1 className="text-xl font-semibold text-white">Admin Panel</h1>
-          <p className="mt-1 text-sm text-neutral-400">ERP Platform · Operator Access</p>
+          <p className="mt-1 text-sm text-neutral-400">Gradia · Operator Access</p>
         </div>
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 space-y-4">

@@ -10,7 +10,7 @@ export async function POST(_req: NextRequest) {
   }
 
   const resendKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'invoices@erp-base.com';
+  const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'invoices@gradia.in';
 
   const supabase = createClient();
   const today = new Date().toISOString().split('T')[0];

@@ -75,5 +75,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (rows.length) await admin.from('entitlements').upsert(rows, { onConflict: 'org_id,module_key' });
   }
 
+  if (body.extend_trial_days) {
+    const days = Number(body.extend_trial_days);
+    if (days > 0 && days <= 365) {
+      const { data: currentPlan } = await admin.from('org_plans').select('next_billing_date,status').eq('org_id', id).maybeSingle();
+      const base = new Date();
+      if (currentPlan?.next_billing_date) {
+        const existing = new Date(currentPlan.next_billing_date + 'T23:59:59');
+        if (existing > base) base.setTime(existing.getTime());
+      }
+      base.setDate(base.getDate() + days);
+      await admin.from('org_plans').upsert({
+        org_id: id,
+        status: 'trial',
+        next_billing_date: base.toISOString().slice(0, 10),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'org_id' });
+    }
+  }
+
   return NextResponse.json({ success: true });
 }

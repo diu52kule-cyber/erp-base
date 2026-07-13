@@ -15,7 +15,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (!ctx?.org) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const resendKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'invoices@erp-base.com';
+  const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'invoices@gradia.in';
   if (!resendKey) return NextResponse.json({ error: 'Email not configured (RESEND_API_KEY missing)' }, { status: 503 });
 
   const supabase = createClient();

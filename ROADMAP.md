@@ -1,4 +1,4 @@
-# PLAN OF ACTION — Roadmap
+    # PLAN OF ACTION — Roadmap
 
 > Companion to [ARCHITECTURE.md](ARCHITECTURE.md). That doc = **how it's built today**.
 > This doc = **what to build next and why**. Everything here is 🔜 planned.

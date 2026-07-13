@@ -89,7 +89,7 @@ export default function ApiKeysPage() {
           <div>GET /api/v1/contacts</div>
           <div>GET /api/v1/products</div>
         </div>
-        <p className="mt-2 text-xs text-neutral-500">Pass your key as: <code className="font-mono">Authorization: Bearer erpk_...</code></p>
+        <p className="mt-2 text-xs text-neutral-500">Pass your key as: <code className="font-mono">Authorization: Bearer grdk_...</code></p>
       </div>
     </div>
   );

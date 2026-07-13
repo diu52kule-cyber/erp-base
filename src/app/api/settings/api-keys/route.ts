@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const { name } = await req.json();
   if (!name) return NextResponse.json({ error: 'Name required' }, { status: 400 });
 
-  const rawKey = 'erpk_' + crypto.randomBytes(24).toString('hex');
+  const rawKey = 'grdk_' + crypto.randomBytes(24).toString('hex');
   const prefix = rawKey.slice(0, 12);
   const hash = crypto.createHash('sha256').update(rawKey).digest('hex');
 

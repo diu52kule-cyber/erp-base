@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit, rateLimitKey } from '@/lib/rateLimit';
 
-const SITE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://erp-base-eight.vercel.app';
+const SITE = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 export async function POST(req: NextRequest) {
   // Rate limit: 3 password reset attempts per IP per 15 minutes
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         await new Resend(resendKey).emails.send({
           from,
           to: email,
-          subject: 'Reset your ERP Base password',
+          subject: 'Reset your Gradia password',
           html: `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto">
             <h2 style="color:#171717">Reset your password</h2>
             <p style="color:#525252">Click the button below to set a new password. This link expires in 1 hour.</p>

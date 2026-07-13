@@ -4,7 +4,9 @@ import { NextRequest } from 'next/server';
 export const ADMIN_COOKIE = 'erp_admin_session';
 
 function secret() {
-  return process.env.ADMIN_SECRET ?? 'dev-secret-change-in-production';
+  const s = process.env.ADMIN_SECRET;
+  if (!s) throw new Error('ADMIN_SECRET environment variable is not set');
+  return s;
 }
 
 export function signAdminToken(username: string): string {

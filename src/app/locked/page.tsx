@@ -35,7 +35,7 @@ export default async function LockedPage() {
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <header className="border-b border-neutral-200 bg-white px-6 py-4">
         <div className="mx-auto max-w-5xl flex items-center justify-between">
-          <span className="text-lg font-semibold">ERP Platform</span>
+          <span className="text-lg font-semibold">Gradia</span>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <form action="/api/auth/signout" method="POST">

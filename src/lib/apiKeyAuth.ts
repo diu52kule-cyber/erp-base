@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function authenticateApiKey(req: NextRequest): Promise<{ orgId: string } | null> {
   const authHeader = req.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer erpk_')) return null;
+  if (!authHeader?.startsWith('Bearer grdk_') && !authHeader?.startsWith('Bearer erpk_')) return null;
   const rawKey = authHeader.slice(7);
   const hash = crypto.createHash('sha256').update(rawKey).digest('hex');
   const supabase = createAdminClient();

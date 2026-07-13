@@ -4,23 +4,23 @@ import SelectOnFocus from "@/components/SelectOnFocus";
 import AppOverlays from "@/components/AppOverlays";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://erp-base-eight.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
-    default: "ERP Base — Run your business & team in one place",
-    template: "%s · ERP Base",
+    default: "Gradia — Run your business &amp; team in one place",
+    template: "%s · Gradia",
   },
   description:
     "Modular business management for Indian SMBs: billing, GST, POS, inventory, CRM, HR — plus a full startup workspace (docs, tasks, OKRs).",
-  applicationName: "ERP Base",
+  applicationName: "Gradia",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "ERP Base" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Gradia" },
   openGraph: {
-    title: "ERP Base",
+    title: "Gradia",
     description: "Run your whole business — and your whole team — in one place.",
     type: "website",
-    siteName: "ERP Base",
+    siteName: "Gradia",
   },
-  twitter: { card: "summary_large_image", title: "ERP Base", description: "Run your whole business — and your whole team — in one place." },
+  twitter: { card: "summary_large_image", title: "Gradia", description: "Run your whole business — and your whole team — in one place." },
 };
 
 export const viewport: Viewport = {

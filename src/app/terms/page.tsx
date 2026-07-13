@@ -1,4 +1,4 @@
-export const metadata = { title: 'Terms of Service — ERP Base' };
+export const metadata = { title: 'Terms of Service — Gradia' };
 
 export default function TermsPage() {
   return (
@@ -11,12 +11,12 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-3">1. Acceptance of Terms</h2>
-            <p>By creating an account or using ERP Base (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
+            <p>By creating an account or using Gradia (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-3">2. Description of Service</h2>
-            <p>ERP Base is a cloud-based business management platform for Indian small and medium businesses. Features include invoicing, CRM, inventory, HR, accounting, and more. Features available to you depend on your subscription plan.</p>
+            <p>Gradia is a cloud-based business management platform for Indian small and medium businesses. Features include invoicing, CRM, inventory, HR, accounting, and more. Features available to you depend on your subscription plan.</p>
           </section>
 
           <section>
