@@ -3,10 +3,14 @@ import { cookies } from "next/headers";
 
 export function createClient() {
   const cookieStore = cookies();
+  // Server talks to Supabase over the internal network (fast, tunnel-independent).
+  const url =
+    process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    url,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: { name: "sb-erp-auth" },
       cookies: {
         getAll() {
           return cookieStore.getAll();
