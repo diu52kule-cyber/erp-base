@@ -35,7 +35,12 @@ export default async function BillingPage({ searchParams }: { searchParams: { ty
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Billing &amp; Invoicing</h1>
-        <Link href={`/dashboard/billing/new?type=${docType}`} className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">New {cfg.label}</Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/settings/invoice" className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50" title="Bill format & invoice settings">
+            <span aria-hidden>⚙</span> Bill Settings
+          </Link>
+          <Link href={`/dashboard/billing/new?type=${docType}`} className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">New {cfg.label}</Link>
+        </div>
       </div>
 
       {/* Document tabs */}

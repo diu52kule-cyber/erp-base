@@ -9,11 +9,15 @@ type Settings = {
   logo_url?: string | null; signature_url?: string | null;
   default_terms?: string | null; default_notes?: string | null; default_due_days?: number | null;
   show_bank?: boolean | null; show_upi_qr?: boolean | null; enable_round_off?: boolean | null;
+  template?: string | null; accent_color?: string | null; print_color_mode?: string | null;
+  print_copies?: number | null; paper_size?: string | null; show_hsn?: boolean | null; show_logo?: boolean | null;
 };
 
 export default function InvoiceSettingsClient({ initial }: { initial: Settings }) {
   const [s, setS] = useState<Settings>({
-    show_bank: true, show_upi_qr: true, enable_round_off: true, default_due_days: 0, ...initial,
+    show_bank: true, show_upi_qr: true, enable_round_off: true, default_due_days: 0,
+    template: 'classic', accent_color: '#171717', print_color_mode: 'color',
+    print_copies: 1, paper_size: 'A4', show_hsn: true, show_logo: true, ...initial,
   });
   const [saving, setSaving] = useState(false);
 
@@ -57,6 +61,53 @@ export default function InvoiceSettingsClient({ initial }: { initial: Settings }
           <div><label className={label}>Signature image URL</label><input className={input} value={s.signature_url ?? ''} onChange={(e) => set('signature_url', e.target.value)} placeholder="https://…/signature.png" /></div>
           <p className="text-xs text-neutral-400">Paste a public image URL (e.g. from an uploaded attachment). Square PNG works best for the logo.</p>
         </div>
+      </section>
+
+      {/* Bill format & printing */}
+      <section className="rounded-xl border border-neutral-200 bg-white p-6">
+        <h2 className="mb-1 font-medium">Bill format &amp; printing</h2>
+        <p className="mb-4 text-xs text-neutral-400">Controls how your invoices &amp; documents look and print.</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className={label}>Layout template</label>
+            <select className={input} value={s.template ?? 'classic'} onChange={(e) => set('template', e.target.value)}>
+              <option value="classic">Classic</option>
+              <option value="modern">Modern (accent header)</option>
+              <option value="compact">Compact</option>
+            </select>
+          </div>
+          <div>
+            <label className={label}>Accent colour</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={s.accent_color ?? '#171717'} onChange={(e) => set('accent_color', e.target.value)} className="h-9 w-12 shrink-0 cursor-pointer rounded border border-neutral-200" />
+              <input className={`${input} font-mono`} value={s.accent_color ?? '#171717'} onChange={(e) => set('accent_color', e.target.value)} placeholder="#171717" />
+            </div>
+          </div>
+          <div>
+            <label className={label}>Print colour</label>
+            <select className={input} value={s.print_color_mode ?? 'color'} onChange={(e) => set('print_color_mode', e.target.value)}>
+              <option value="color">Colour</option>
+              <option value="bw">Black &amp; white</option>
+            </select>
+          </div>
+          <div>
+            <label className={label}>Copies to print</label>
+            <input type="number" min="1" max="4" className={input} value={s.print_copies ?? 1} onChange={(e) => set('print_copies', Math.min(4, Math.max(1, parseInt(e.target.value) || 1)))} />
+          </div>
+          <div>
+            <label className={label}>Paper size</label>
+            <select className={input} value={s.paper_size ?? 'A4'} onChange={(e) => set('paper_size', e.target.value)}>
+              <option value="A4">A4</option>
+              <option value="A5">A5</option>
+              <option value="thermal_80">Thermal 80mm</option>
+            </select>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-5">
+          <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={s.show_logo !== false} onChange={(e) => set('show_logo', e.target.checked)} /> Show logo on documents</label>
+          <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={s.show_hsn !== false} onChange={(e) => set('show_hsn', e.target.checked)} /> Show HSN/SAC column</label>
+        </div>
+        <p className="mt-3 text-xs text-neutral-400">Black &amp; white and multiple copies apply when printing from the app’s Print button or “Save &amp; Print”.</p>
       </section>
 
       {/* Defaults */}

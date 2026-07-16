@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // Fetch PO lines to update received_qty and auto-increment stock
   const { data: poLines } = await supabase
     .from('po_lines')
-    .select('id,product_id,quantity,received_qty,description')
+    .select('id,product_id,quantity,received_qty,description,unit_price')
     .eq('po_id', params.id);
 
   const lineMap = new Map((poLines ?? []).map((l) => [l.id, l]));
@@ -78,8 +78,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         .single();
 
       if (prod) {
+        // Increment stock, and refresh the product's cost price to this PO's
+        // purchase rate so inventory valuation & margins reflect the latest buy.
+        const prodUpdate: Record<string, unknown> = {
+          stock_qty: (prod.stock_qty ?? 0) + received.quantity_received,
+        };
+        if (Number(existing.unit_price) > 0) prodUpdate.cost_price = Number(existing.unit_price);
         await supabase.from('products')
-          .update({ stock_qty: (prod.stock_qty ?? 0) + received.quantity_received })
+          .update(prodUpdate)
           .eq('id', existing.product_id);
 
         await supabase.from('stock_movements').insert({

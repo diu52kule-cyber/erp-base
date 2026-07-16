@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildInvoiceComputation } from './server';
+import { applyStockForDoc } from './stock';
 import type { DocType } from './docTypes';
 import type { CreateInvoiceInput } from '@/lib/types/billing';
 
@@ -54,6 +55,9 @@ export async function createDocument(
     .from('invoice_items')
     .insert(items.map((item) => ({ invoice_id: invoice.id, org_id: ctx.orgId, ...item })));
   if (itemsErr) return { error: itemsErr.message };
+
+  // Move inventory: a sale (invoice) deducts stock; a credit note adds it back.
+  await applyStockForDoc(supabase, ctx.orgId, ctx.userId, docType, docNumber as string, items, 'apply');
 
   if (docType === 'invoice') {
     if (header.customer_id && ctx.hasLedger) {

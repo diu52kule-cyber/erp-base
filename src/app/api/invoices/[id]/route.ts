@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getOrgContext } from '@/lib/entitlements';
 import { buildInvoiceComputation, validateInvoiceInput } from '@/lib/invoice/server';
+import { applyStockForDoc } from '@/lib/invoice/stock';
+import type { DocType } from '@/lib/invoice/docTypes';
 import type { CreateInvoiceInput } from '@/lib/types/billing';
 
 // ---- Edit a document (keeps the same number + doc_type) ----
@@ -48,12 +50,23 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     .eq('org_id', ctx.org.id);
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
 
-  // Replace line items.
+  // Snapshot the old lines so we can reverse their stock movement, then replace.
+  const { data: oldItems } = await supabase
+    .from('invoice_items')
+    .select('product_id, quantity')
+    .eq('invoice_id', params.id)
+    .eq('org_id', ctx.org.id);
+
   await supabase.from('invoice_items').delete().eq('invoice_id', params.id).eq('org_id', ctx.org.id);
   const { error: itemsErr } = await supabase.from('invoice_items').insert(
     items.map((item) => ({ invoice_id: params.id, org_id: ctx.org!.id, ...item }))
   );
   if (itemsErr) return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+
+  // Re-sync inventory: undo the old lines' movement, apply the new lines'.
+  const editedDocType = existing.doc_type as DocType;
+  await applyStockForDoc(supabase, ctx.org.id, ctx.user.id, editedDocType, existing.invoice_number, oldItems ?? [], 'reverse');
+  await applyStockForDoc(supabase, ctx.org.id, ctx.user.id, editedDocType, existing.invoice_number, items, 'apply');
 
   // Re-sync the customer ledger: refresh the receivable to the new total.
   if (existing.doc_type === 'invoice' && ctx.enabledModules.has('ledger')) {
@@ -101,11 +114,24 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   const { data: existing } = await supabase
     .from('invoices')
-    .select('id, status, doc_type')
+    .select('id, status, doc_type, invoice_number')
     .eq('id', params.id)
     .eq('org_id', ctx.org.id)
     .maybeSingle();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Restore stock this document had moved (voiding or deleting undoes the sale).
+  if (existing.status !== 'cancelled') {
+    const { data: soldItems } = await supabase
+      .from('invoice_items')
+      .select('product_id, quantity')
+      .eq('invoice_id', params.id)
+      .eq('org_id', ctx.org.id);
+    await applyStockForDoc(
+      supabase, ctx.org.id, ctx.user.id,
+      existing.doc_type as DocType, existing.invoice_number, soldItems ?? [], 'reverse',
+    );
+  }
 
   const { count: paymentCount } = await supabase
     .from('payments')

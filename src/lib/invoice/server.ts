@@ -54,6 +54,7 @@ export function buildInvoiceComputation(input: CreateInvoiceInput, orgStateCode:
   };
 
   const items = input.items.map((it, index) => ({
+    product_id: it.product_id ?? null,
     description: it.description.trim(),
     hsn_code: it.hsn_code?.toString().trim() || null,
     quantity: it.quantity,
@@ -96,6 +97,7 @@ export function invoiceRowToInput(inv: AnyRow, items: AnyRow[]): CreateInvoiceIn
     items: [...items]
       .sort((a, b) => n(a.sort_order) - n(b.sort_order))
       .map((it) => ({
+        product_id: (it.product_id as string) ?? null,
         description: String(it.description ?? ''),
         hsn_code: (it.hsn_code as string) ?? null,
         quantity: n(it.quantity),

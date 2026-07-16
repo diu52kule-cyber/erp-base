@@ -12,6 +12,7 @@ import { fmtMoney, CURRENCY_SYMBOLS } from '@/lib/invoice/format';
 import { DOC_TYPES, PAYMENT_TERMS, addDays, type DocType } from '@/lib/invoice/docTypes';
 
 type LineItem = {
+  product_id?: string | null;
   description: string;
   hsn_code: string;
   quantity: number;
@@ -38,6 +39,7 @@ export type InvoiceFormInitial = {
   discount_value?: number;
   round_off_enabled?: boolean;
   items?: {
+    product_id?: string | null;
     description: string;
     hsn_code?: string | null;
     quantity: number;
@@ -66,12 +68,13 @@ type Props = {
 const today = () => new Date().toISOString().split('T')[0];
 
 const emptyItem = (gst = 18): LineItem => ({
-  description: '', hsn_code: '', quantity: 1, unit_price: 0, gst_rate: gst, discount_pct: 0, stock_qty: null,
+  product_id: null, description: '', hsn_code: '', quantity: 1, unit_price: 0, gst_rate: gst, discount_pct: 0, stock_qty: null,
 });
 
 function initialItems(initial: InvoiceFormInitial | undefined, gst: number): LineItem[] {
   if (!initial?.items?.length) return [emptyItem(gst)];
   return initial.items.map((it) => ({
+    product_id: it.product_id ?? null,
     description: it.description ?? '',
     hsn_code: it.hsn_code ?? '',
     quantity: it.quantity ?? 1,
@@ -194,6 +197,7 @@ export default function InvoiceForm({
       discount_value: billDiscValue,
       round_off_enabled: roundOff,
       items: items.map((i) => ({
+        product_id: i.product_id ?? null,
         description: i.description,
         hsn_code: i.hsn_code.trim() || null,
         quantity: i.quantity,
@@ -350,8 +354,8 @@ export default function InvoiceForm({
               <div key={index} className="space-y-1">
                 <div className="grid grid-cols-[1fr_80px_64px_96px_64px_80px_96px_28px] items-center gap-2">
                   <ProductPicker value={item.description} products={products}
-                    onChange={(v) => updateItem(index, 'description', v)}
-                    onPick={(p) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate, stock_qty: p.stock_qty ?? null } : it))}
+                    onChange={(v) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, description: v, product_id: null, stock_qty: null } : it))}
+                    onPick={(p) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, product_id: p.id, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate, stock_qty: p.stock_qty ?? null } : it))}
                     placeholder="Item description" />
                   <input type="text" value={item.hsn_code} onChange={(e) => updateItem(index, 'hsn_code', e.target.value.replace(/\D/g, ''))} placeholder="9983" maxLength={8} className="rounded-lg border border-neutral-200 px-2 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
                   <div>

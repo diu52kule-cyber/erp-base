@@ -27,6 +27,16 @@ export async function PUT(req: NextRequest) {
   row.show_upi_qr = body.show_upi_qr !== false;
   row.enable_round_off = body.enable_round_off !== false;
 
+  // Bill format & print defaults
+  row.template = ['classic', 'modern', 'compact'].includes(body.template) ? body.template : 'classic';
+  row.accent_color = /^#[0-9a-fA-F]{6}$/.test((body.accent_color ?? '').toString().trim())
+    ? body.accent_color.toString().trim() : '#171717';
+  row.print_color_mode = body.print_color_mode === 'bw' ? 'bw' : 'color';
+  row.print_copies = Math.min(4, Math.max(1, parseInt(body.print_copies) || 1));
+  row.paper_size = ['A4', 'A5', 'thermal_80'].includes(body.paper_size) ? body.paper_size : 'A4';
+  row.show_hsn = body.show_hsn !== false;
+  row.show_logo = body.show_logo !== false;
+
   const supabase = createClient();
   const { error } = await supabase.from('org_invoice_settings').upsert(row, { onConflict: 'org_id' });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -10,6 +10,7 @@ import { upiUri, upiQrDataUrl } from '@/lib/invoice/upi';
 import StatusButton from './StatusButton';
 import InvoiceActions from './InvoiceActions';
 import AutoPrint from './AutoPrint';
+import PrintCopies from './PrintCopies';
 import AttachmentPanel from '@/components/AttachmentPanel';
 import PrintButton from '@/components/PrintButton';
 import Comments from '@/components/Comments';
@@ -66,6 +67,15 @@ export default async function InvoiceDetailPage({
   const roundOff = invoice.round_off ?? 0;
   const isInvoice = docType === 'invoice';
 
+  // Bill-format settings (accent colour, B&W, copies, paper, show logo/HSN).
+  const accent = bill?.accent_color || '#171717';
+  const bwClass = bill?.print_color_mode === 'bw' ? 'print-bw' : '';
+  const paper = bill?.paper_size || 'A4';
+  const showLogo = bill?.show_logo !== false;
+  const showHsnCol = bill?.show_hsn !== false && items.some((i) => i.hsn_code);
+  const pageSize = paper === 'thermal_80' ? '80mm auto' : paper;
+  const pageMargin = paper === 'thermal_80' ? '4mm' : '12mm';
+
   // UPI QR (INR invoices only) for the printed document.
   let upiQr: string | null = null;
   if (isInvoice && bill?.show_upi_qr && bill?.upi_id && currency === 'INR') {
@@ -75,6 +85,8 @@ export default async function InvoiceDetailPage({
   return (
     <div className="space-y-6">
       <AutoPrint enabled={searchParams.print === '1'} />
+      <PrintCopies copies={bill?.print_copies ?? 1} />
+      <style dangerouslySetInnerHTML={{ __html: `@media print{@page{size:${pageSize};margin:${pageMargin}}}` }} />
 
       {/* Page header */}
       <div className="flex items-start justify-between">
@@ -119,12 +131,12 @@ export default async function InvoiceDetailPage({
       </div>
 
       {/* Document card (printable) */}
-      <div id="invoice-print-area" className="rounded-xl border border-neutral-200 bg-white p-8 sm:p-10">
+      <div id="invoice-print-area" className={`rounded-xl border border-neutral-200 bg-white p-8 sm:p-10 ${bwClass}`}>
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-6 border-b border-neutral-200 pb-6">
           <div className="flex items-start gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {bill?.logo_url && <img src={bill.logo_url} alt="" className="h-14 w-14 rounded object-contain" />}
+            {bill?.logo_url && showLogo && <img src={bill.logo_url} alt="" className="h-14 w-14 rounded object-contain" />}
             <div>
               <div className="text-xl font-bold text-neutral-900">{sellerName}</div>
               <div className="mt-0.5 text-sm capitalize text-neutral-500">{org?.business_type}{org?.city ? ` · ${org.city}` : ''}</div>
@@ -133,7 +145,7 @@ export default async function InvoiceDetailPage({
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold tracking-tight text-neutral-900">{cfg.title}</div>
+            <div className="text-2xl font-bold tracking-tight" style={{ color: accent }}>{cfg.title}</div>
             <div className="mt-1 font-mono text-sm text-neutral-500">{invoice.invoice_number}</div>
             {invoice.reference_no && <div className="text-xs text-neutral-400">Ref: {invoice.reference_no}</div>}
             <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[invoice.status as InvoiceStatus] ?? STATUS_STYLES.draft}`}>{invoice.status}</span>
@@ -163,7 +175,7 @@ export default async function InvoiceDetailPage({
             <thead>
               <tr className="border-b-2 border-neutral-200 text-xs uppercase tracking-wide text-neutral-400">
                 <th className="pb-2 text-left font-medium">Description</th>
-                {items.some((i) => i.hsn_code) && <th className="pb-2 text-right font-medium">HSN</th>}
+                {showHsnCol && <th className="pb-2 text-right font-medium">HSN</th>}
                 <th className="pb-2 text-right font-medium">Qty</th>
                 <th className="pb-2 text-right font-medium">Rate</th>
                 {items.some((i) => (i.discount_amount ?? 0) > 0) && <th className="pb-2 text-right font-medium">Disc</th>}
@@ -176,7 +188,7 @@ export default async function InvoiceDetailPage({
               {items.map((item) => (
                 <tr key={item.id}>
                   <td className="py-3 pr-2">{item.description}</td>
-                  {items.some((i) => i.hsn_code) && <td className="py-3 text-right font-mono text-xs text-neutral-500">{item.hsn_code ?? '—'}</td>}
+                  {showHsnCol && <td className="py-3 text-right font-mono text-xs text-neutral-500">{item.hsn_code ?? '—'}</td>}
                   <td className="py-3 text-right text-neutral-600">{item.quantity}</td>
                   <td className="py-3 text-right text-neutral-600">{money(item.unit_price)}</td>
                   {items.some((i) => (i.discount_amount ?? 0) > 0) && <td className="py-3 text-right text-neutral-600">{(item.discount_amount ?? 0) > 0 ? money(item.discount_amount ?? 0) : '—'}</td>}
@@ -204,7 +216,7 @@ export default async function InvoiceDetailPage({
               </>
             )}
             {roundOff !== 0 && <div className="flex justify-between text-neutral-600"><span>Round Off</span><span>{roundOff >= 0 ? '+' : '−'} {money(Math.abs(roundOff))}</span></div>}
-            <div className="mt-1 flex justify-between rounded-lg bg-neutral-900 px-3 py-2.5 text-base font-semibold text-white"><span>Total</span><span>{money(invoice.total)}</span></div>
+            <div className="mt-1 flex justify-between rounded-lg px-3 py-2.5 text-base font-semibold text-white" style={{ backgroundColor: accent }}><span>Total</span><span>{money(invoice.total)}</span></div>
             {isInvoice && amountPaid > 0 && (
               <>
                 <div className="flex justify-between text-green-700"><span>Paid</span><span>− {money(amountPaid)}</span></div>

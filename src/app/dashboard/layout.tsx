@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import CommandPalette from "@/components/CommandPalette";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay";
 import GlobalHotkeys from "@/components/GlobalHotkeys";
+import KeyboardNav from "@/components/KeyboardNav";
 import ToastProvider from "@/components/ToastProvider";
 import type { Metadata } from "next";
 
@@ -53,6 +54,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <CommandPalette items={cmdItems} />
       <ShortcutsOverlay />
       <GlobalHotkeys />
+      <KeyboardNav />
       <main className="flex flex-1 flex-col overflow-hidden pt-14 md:pt-0">
         {showTrialBanner && (
           <div className={`flex shrink-0 items-center justify-between gap-4 px-8 py-2.5 text-sm ${

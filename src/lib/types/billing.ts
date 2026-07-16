@@ -10,6 +10,7 @@ export type InvoiceItem = {
   id: string;
   invoice_id: string;
   org_id: string;
+  product_id?: string | null;
   description: string;
   hsn_code?: string | null;
   quantity: number;
@@ -62,6 +63,7 @@ export type Invoice = {
 };
 
 export type CreateInvoiceItemInput = {
+  product_id?: string | null;
   description: string;
   hsn_code?: string | null;
   quantity: number;
