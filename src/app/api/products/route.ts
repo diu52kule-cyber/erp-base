@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       unit: input.unit,
       selling_price: input.selling_price,
       cost_price: input.cost_price ?? 0,
+      discount_pct: input.discount_pct ?? 0,
       category: input.category?.trim() || null,
       brand: input.brand?.trim() || null,
       tax_inclusive: input.tax_inclusive ?? false,

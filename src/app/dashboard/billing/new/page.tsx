@@ -14,7 +14,7 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: {
 
   const supabase = createClient();
   const [{ data: products }, { data: contacts }, { data: settings }, { data: outstanding }] = await Promise.all([
-    supabase.from('products').select('id,name,sku,unit_price:selling_price,gst_rate,stock_qty').eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
+    supabase.from('products').select('id,name,sku,barcode,unit_price:selling_price,gst_rate,stock_qty,discount_pct').eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
     supabase.from('contacts').select('id,name,company,email,gstin,address,credit_limit').eq('org_id', ctx.org.id).order('name'),
     supabase.from('org_invoice_settings').select('default_due_days,default_terms,default_notes,enable_round_off').eq('org_id', ctx.org.id).maybeSingle(),
     // outstanding balance per contact: sum of (total - amount_paid) for unpaid invoices

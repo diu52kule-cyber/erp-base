@@ -17,6 +17,7 @@ export type Product = {
   unit: Unit;
   selling_price: number;
   cost_price: number;
+  discount_pct: number;
   category: string | null;
   brand: string | null;
   tax_inclusive: boolean;
@@ -62,6 +63,7 @@ export type CreateProductInput = {
   unit: Unit;
   selling_price: number;
   cost_price?: number;
+  discount_pct?: number;
   category?: string;
   brand?: string;
   tax_inclusive?: boolean;

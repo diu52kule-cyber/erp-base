@@ -27,6 +27,7 @@ export default function ProductForm({ mode = 'create', product, categories = [] 
     unit: (product?.unit ?? 'pcs') as Unit,
     selling_price: product?.selling_price != null ? String(product.selling_price) : '',
     cost_price: product?.cost_price != null && product.cost_price > 0 ? String(product.cost_price) : '',
+    discount_pct: product?.discount_pct != null && product.discount_pct > 0 ? String(product.discount_pct) : '',
     category: product?.category ?? '',
     brand: product?.brand ?? '',
     tax_inclusive: product?.tax_inclusive ?? false,
@@ -69,6 +70,7 @@ export default function ProductForm({ mode = 'create', product, categories = [] 
       unit: form.unit,
       selling_price: price,
       cost_price: form.cost_price ? parseFloat(form.cost_price) : 0,
+      discount_pct: form.discount_pct ? parseFloat(form.discount_pct) : 0,
       category: form.category || undefined,
       brand: form.brand || undefined,
       tax_inclusive: form.tax_inclusive,
@@ -199,6 +201,12 @@ export default function ProductForm({ mode = 'create', product, categories = [] 
             <select value={form.gst_rate} onChange={(e) => set('gst_rate', parseInt(e.target.value))} className={inputCls}>
               {GST_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
             </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-neutral-600 dark:text-neutral-400">Default Discount (%)</label>
+            <input type="number" value={form.discount_pct} onChange={(e) => set('discount_pct', e.target.value)} min="0" max="100" step="0.01" placeholder="0" className={inputCls} />
+            <p className="mt-1 text-xs text-neutral-400">Auto-applied on the line when this item is added to an invoice</p>
           </div>
 
           <div className="flex items-center gap-3 pt-5">

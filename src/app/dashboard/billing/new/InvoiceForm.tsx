@@ -369,11 +369,15 @@ export default function InvoiceForm({
                 <div className="grid grid-cols-[1fr_80px_64px_96px_64px_80px_96px_28px] items-center gap-2">
                   <ProductPicker value={item.description} products={products}
                     onChange={(v) => setItems((prev) => ensureTrailing(prev.map((it, j) => j === index ? { ...it, description: v, product_id: null, stock_qty: null } : it)))}
-                    onPick={(p) => setItems((prev) => ensureTrailing(prev.map((it, j) => j === index ? { ...it, product_id: p.id, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate, stock_qty: p.stock_qty ?? null } : it)))}
-                    placeholder="Item description" />
+                    onPick={(p) => {
+                      setItems((prev) => ensureTrailing(prev.map((it, j) => j === index ? { ...it, product_id: p.id, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate, discount_pct: (p.discount_pct ?? 0) || it.discount_pct, stock_qty: p.stock_qty ?? null } : it)));
+                      // Jump straight to the quantity for the item just added (barcode/keyboard flow).
+                      setTimeout(() => { const el = document.querySelector<HTMLInputElement>(`[data-qty-idx="${index}"]`); el?.focus(); el?.select(); }, 0);
+                    }}
+                    placeholder="Item / scan barcode" />
                   <input type="text" value={item.hsn_code} onChange={(e) => updateItem(index, 'hsn_code', e.target.value.replace(/\D/g, ''))} placeholder="9983" maxLength={8} className="rounded-lg border border-neutral-200 px-2 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
                   <div>
-                    <input type="number" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)} min="0" step="0.001" className={`w-full rounded-lg border px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 ${stockWarn ? 'border-amber-400' : 'border-neutral-200'}`} />
+                    <input type="number" data-qty-idx={index} value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)} min="0" step="0.001" className={`w-full rounded-lg border px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 ${stockWarn ? 'border-amber-400' : 'border-neutral-200'}`} />
                   </div>
                   <input type="number" value={item.unit_price} onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)} min="0" step="0.01" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
                   <input type="number" value={item.discount_pct} onChange={(e) => updateItem(index, 'discount_pct', Math.min(100, parseFloat(e.target.value) || 0))} min="0" max="100" step="0.01" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />

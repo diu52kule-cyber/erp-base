@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import BarcodeLabel from '@/components/BarcodeLabel';
 
-export default function LabelButton({ name, price, code }: { name: string; price: number; code: string }) {
+export default function LabelButton({ name, price, code, offer }: { name: string; price: number; code: string; offer?: string | null }) {
   const [open, setOpen] = useState(false);
   const [qty, setQty] = useState(1);
 
@@ -34,7 +34,7 @@ export default function LabelButton({ name, price, code }: { name: string; price
 
             <div id="label-print-area" className="flex flex-wrap justify-center gap-2 rounded-lg border border-dashed border-neutral-200 p-3">
               {Array.from({ length: qty }).map((_, i) => (
-                <BarcodeLabel key={i} name={name} price={price} code={code} />
+                <BarcodeLabel key={i} name={name} price={price} code={code} offer={offer} />
               ))}
             </div>
 

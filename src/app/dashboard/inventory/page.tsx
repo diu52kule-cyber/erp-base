@@ -6,6 +6,7 @@ import type { Product } from '@/lib/types/inventory';
 import EmptyState from '@/components/EmptyState';
 import PageHotkeys from '@/components/PageHotkeys';
 import InventoryTable from './InventoryTable';
+import { offerLabel, isOfferActive } from '@/lib/offers';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
@@ -52,6 +53,24 @@ export default async function InventoryPage({
   const lowStock = (products ?? []).filter((p) => p.low_stock_threshold > 0 && p.stock_qty <= p.low_stock_threshold);
   const totalStockValue = (products ?? []).reduce((s, p) => s + p.stock_qty * (p.cost_price ?? 0), 0);
 
+  // Active offers → map product_id → label (store-wide offers apply to all).
+  const offerMap: Record<string, string> = {};
+  try {
+    const { data: offerRows } = await supabase
+      .from('offers')
+      .select('product_id,offer_type,value,label_text,title,active,starts_on,ends_on')
+      .eq('org_id', ctx.org!.id)
+      .eq('active', true);
+    let storeWide = '';
+    for (const o of (offerRows ?? [])) {
+      if (!isOfferActive(o)) continue;
+      const label = offerLabel(o);
+      if (o.product_id) { if (!offerMap[o.product_id]) offerMap[o.product_id] = label; }
+      else if (!storeWide) storeWide = label;
+    }
+    if (storeWide) for (const p of (products ?? [])) if (!offerMap[p.id]) offerMap[p.id] = storeWide;
+  } catch { /* offers table not yet migrated */ }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -62,6 +81,9 @@ export default async function InventoryPage({
           </Link>
           <Link href="/dashboard/inventory/production" className="rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
             Production Orders
+          </Link>
+          <Link href="/dashboard/inventory/offers" className="rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            🎁 Offers
           </Link>
           <Link href="/dashboard/inventory/new" className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700">
             Add Product
@@ -136,7 +158,7 @@ export default async function InventoryPage({
           actionHref="/dashboard/inventory/new"
         />
       ) : (
-        <InventoryTable products={products} />
+        <InventoryTable products={products} offers={offerMap} />
       )}
     </div>
   );

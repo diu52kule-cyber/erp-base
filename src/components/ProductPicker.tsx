@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { moveFocus } from '@/lib/focusNav';
 
-export type PickProduct = { id: string; name: string; sku?: string | null; unit_price: number; gst_rate: number; stock_qty?: number | null };
+export type PickProduct = { id: string; name: string; sku?: string | null; barcode?: string | null; unit_price: number; gst_rate: number; stock_qty?: number | null; discount_pct?: number | null };
 
 // A line-item description input with product autocomplete. Typing filters the
 // catalog; picking a product fills description/price/GST. Fully keyboard-driven:
@@ -23,7 +23,7 @@ export default function ProductPicker({
   const inputRef = useRef<HTMLInputElement>(null);
   const q = value.trim().toLowerCase();
   const matches = (q
-    ? products.filter((p) => p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q))
+    ? products.filter((p) => p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q) || (p.barcode ?? '').toLowerCase().includes(q))
     : products).slice(0, 8);
 
   useEffect(() => { setHi(-1); }, [value]);
@@ -45,7 +45,11 @@ export default function ProductPicker({
     else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); setHi((h) => Math.max(-1, h - 1)); }
     else if (e.key === 'Enter') {
       e.preventDefault(); e.stopPropagation();
-      if (hi >= 0 && matches[hi]) choose(matches[hi]);
+      if (hi >= 0 && matches[hi]) { choose(matches[hi]); return; }
+      // Barcode scanner types the code then Enter — auto-pick on an exact barcode/SKU match.
+      const t = value.trim();
+      const exact = t ? products.find((p) => (p.barcode && p.barcode === t) || (p.sku && p.sku.toLowerCase() === t.toLowerCase())) : undefined;
+      if (exact) choose(exact);
       else { setOpen(false); if (inputRef.current) moveFocus(inputRef.current, 1); }
     }
     else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setOpen(false); }

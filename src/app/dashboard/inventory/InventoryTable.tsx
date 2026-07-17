@@ -9,7 +9,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
 }
 
-export default function InventoryTable({ products }: { products: Product[] }) {
+export default function InventoryTable({ products, offers = {} }: { products: Product[]; offers?: Record<string, string> }) {
   const [cursor, setCursor] = useState(-1);
   const lenRef = useRef(products.length);
   lenRef.current = products.length;
@@ -94,7 +94,7 @@ export default function InventoryTable({ products }: { products: Product[] }) {
                 </td>
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center gap-1">
-                    <LabelButton name={p.name} price={p.selling_price} code={p.barcode || p.sku || ''} />
+                    <LabelButton name={p.name} price={p.selling_price} code={p.barcode || p.sku || ''} offer={offers[p.id]} />
                     <StockAdjuster productId={p.id} currentQty={p.stock_qty} unit={p.unit} lowStockThreshold={p.low_stock_threshold} />
                     <Link href={`/dashboard/inventory/${p.id}/edit`} className="rounded-md border border-neutral-200 px-2 py-1 text-xs hover:bg-neutral-50" onClick={(e) => e.stopPropagation()}>Edit</Link>
                   </div>
