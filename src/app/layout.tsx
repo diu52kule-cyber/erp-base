@@ -6,11 +6,20 @@ import AppOverlays from "@/components/AppOverlays";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
-    default: "Gradia — Run your business &amp; team in one place",
+    default: "Gradia — ERP & GST Billing Software for Indian SMBs",
     template: "%s · Gradia",
   },
   description:
-    "Modular business management for Indian SMBs: billing, GST, POS, inventory, CRM, HR — plus a full startup workspace (docs, tasks, OKRs).",
+    "Gradia is an all-in-one business management platform for Indian SMBs — GST billing & invoicing, POS, inventory, CRM, HR & payroll, accounting, and a startup workspace. A modern, affordable alternative to Tally, Zoho & Vyapar.",
+  keywords: [
+    "ERP software India", "GST billing software", "invoicing software", "GST invoice generator",
+    "inventory management software", "POS software", "point of sale", "CRM for small business",
+    "accounting software India", "HR and payroll software", "purchase order software",
+    "billing software for small business", "udhaar khata app", "GSTR-1 GSTR-3B software",
+    "business management software", "Tally alternative", "Zoho Books alternative", "Vyapar alternative",
+    "ERP for cafe restaurant retail", "SMB software India", "Gradia",
+  ],
+  alternates: { canonical: "/" },
   applicationName: "Gradia",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Gradia" },
