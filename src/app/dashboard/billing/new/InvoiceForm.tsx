@@ -120,10 +120,9 @@ export default function InvoiceForm({
   const [billDiscValue, setBillDiscValue] = useState<number>(initial?.discount_value ?? 0);
   const [roundOff, setRoundOff] = useState<boolean>(initial?.round_off_enabled ?? roundOffDefault);
 
-  // Payment captured at creation (real invoices only).
-  const [payMethod, setPayMethod] = useState<'credit' | 'cash' | 'upi' | 'card' | 'bank_transfer'>('credit');
-  const [payAmount, setPayAmount] = useState('');
-  const [payRef, setPayRef] = useState('');
+  // Payment(s) captured at creation (real invoices only). Can be split across
+  // multiple sources (cash + UPI …); whatever isn't covered stays on credit.
+  const [payLines, setPayLines] = useState<{ method: string; amount: string; reference: string }[]>([]);
 
   const draftKey =
     mode === 'edit' ? `invoice-edit-${invoiceId}` :
@@ -152,6 +151,14 @@ export default function InvoiceForm({
     })),
     { discountType: billDiscType || undefined, discountValue: billDiscValue, roundOffEnabled: roundOff },
   );
+
+  const received = payLines.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+  const balanceCredit = Math.max(0, totals.total - received);
+  function addPaymentLine() { setPayLines((prev) => [...prev, { method: 'cash', amount: Math.max(0, totals.total - received).toFixed(2), reference: '' }]); }
+  function fullPayment() { setPayLines([{ method: 'cash', amount: totals.total.toFixed(2), reference: '' }]); }
+  function updatePayLine(i: number, field: 'method' | 'amount' | 'reference', val: string) {
+    setPayLines((prev) => prev.map((p, j) => (j === i ? { ...p, [field]: val } : p)));
+  }
 
   function updateItem(index: number, field: keyof LineItem, value: string | number) {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
@@ -183,7 +190,7 @@ export default function InvoiceForm({
     });
     setItems([emptyItem(defaultGst)]);
     setBillDiscType(''); setBillDiscValue(0); setRoundOff(roundOffDefault);
-    setCustomerId(null); setPayMethod('credit'); setPayAmount(''); setPayRef('');
+    setCustomerId(null); setPayLines([]);
   }
 
   async function handleSubmit(action: 'save' | 'new' | 'print') {
@@ -220,9 +227,9 @@ export default function InvoiceForm({
         discount_type: i.discount_pct > 0 ? 'percent' : null,
         discount_value: i.discount_pct,
       })),
-      payment: isInvoice && mode === 'create' && payMethod !== 'credit'
-        ? { method: payMethod, amount: parseFloat(payAmount) || totals.total, reference: payRef.trim() || undefined }
-        : null,
+      payments: isInvoice && mode === 'create'
+        ? payLines.map((p) => ({ method: p.method, amount: parseFloat(p.amount) || 0, reference: p.reference.trim() || undefined })).filter((p) => p.amount > 0)
+        : undefined,
     };
 
     const url =
@@ -424,35 +431,53 @@ export default function InvoiceForm({
         </div>
       </div>
 
-      {/* Payment (real invoices, on create only) */}
+      {/* Payment (real invoices, on create only) — split across multiple sources */}
       {isInvoice && mode === 'create' && (
         <div className="rounded-xl border border-neutral-200 bg-white p-6">
-          <h2 className="font-medium">Payment</h2>
-          <p className="mb-4 mt-1 text-sm text-neutral-500">How is the customer paying for this invoice?</p>
-          <div className="flex flex-wrap gap-2">
-            {([['credit', 'On Credit (Udhaar)'], ['cash', 'Cash'], ['upi', 'UPI'], ['card', 'Card'], ['bank_transfer', 'Bank Transfer']] as const).map(([m, label]) => (
-              <button key={m} type="button" onClick={() => { setPayMethod(m); if (m !== 'credit') setPayAmount(totals.total.toFixed(2)); }}
-                className={`rounded-lg border px-4 py-2 text-sm transition-colors ${payMethod === m ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 hover:bg-neutral-50'}`}>{label}</button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-medium">Payment</h2>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={fullPayment} className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50">Received in full</button>
+              <button type="button" onClick={addPaymentLine} className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50">+ Add split</button>
+            </div>
           </div>
-          {payMethod === 'credit' ? (
-            <p className="mt-3 text-xs text-amber-600">Invoice will stay outstanding. {customerId ? "The full amount is added to the customer's account (udhaar) in their ledger." : 'Link a saved customer above to track this in their ledger.'}</p>
+          <p className="mb-3 mt-1 text-sm text-neutral-500">Take part in cash, part in UPI/card, etc. Whatever isn&apos;t covered stays on credit (udhaar).</p>
+
+          {payLines.length === 0 ? (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              Nothing received yet — the full {money(totals.total)} is on credit. {customerId ? "It's added to the customer's udhaar ledger." : 'Link a saved customer above to track this in their ledger.'}
+            </p>
           ) : (
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm text-neutral-600">Amount received</label>
-                <div className="flex gap-2">
-                  <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} min="0" step="0.01" placeholder={totals.total.toFixed(2)} className={inputCls} />
-                  <button type="button" onClick={() => setPayAmount(totals.total.toFixed(2))} className="whitespace-nowrap rounded-lg border border-neutral-200 px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50">Full</button>
+            <div className="space-y-2">
+              <div className="hidden grid-cols-[150px_1fr_1fr_28px] gap-2 text-xs text-neutral-500 sm:grid">
+                <span>Method</span><span>Amount</span><span>Reference / UTR</span><span />
+              </div>
+              {payLines.map((pl, i) => (
+                <div key={i} className="grid grid-cols-[150px_1fr_1fr_28px] items-center gap-2">
+                  <select value={pl.method} onChange={(e) => updatePayLine(i, 'method', e.target.value)} className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900">
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="card">Card</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                  </select>
+                  <input type="number" min="0" step="0.01" value={pl.amount} onChange={(e) => updatePayLine(i, 'amount', e.target.value)} placeholder="0.00" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+                  <input type="text" value={pl.reference} onChange={(e) => updatePayLine(i, 'reference', e.target.value)} placeholder="optional" className="rounded-lg border border-neutral-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+                  <button type="button" onClick={() => setPayLines((prev) => prev.filter((_, j) => j !== i))} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700" aria-label="Remove payment">×</button>
                 </div>
-                <p className="mt-1 text-xs text-neutral-400">{(parseFloat(payAmount) || 0) >= totals.total - 0.01 ? 'Marks the invoice as paid.' : `Partial — ${money(Math.max(0, totals.total - (parseFloat(payAmount) || 0)))} will stay outstanding.`}</p>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-neutral-600">Reference / UTR / Txn No.</label>
-                <input type="text" value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="optional" className={inputCls} />
-              </div>
+              ))}
             </div>
           )}
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-3 text-sm">
+            <span className="text-neutral-500">Received <b className="text-neutral-800">{money(received)}</b> of {money(totals.total)}</span>
+            {received > totals.total + 0.01 ? (
+              <span className="text-red-600">Over by {money(received - totals.total)} — extra will be ignored</span>
+            ) : balanceCredit > 0.01 ? (
+              <span className="text-amber-700">Balance {money(balanceCredit)} on credit (udhaar)</span>
+            ) : received > 0 ? (
+              <span className="text-green-700">Paid in full</span>
+            ) : null}
+          </div>
         </div>
       )}
 
@@ -473,7 +498,7 @@ export default function InvoiceForm({
         )}
         <button type="button" onClick={() => handleSubmit('print')} disabled={pending} className="rounded-md border border-neutral-300 px-5 py-2 text-sm hover:bg-neutral-50 disabled:opacity-50">Save &amp; Print</button>
         <button type="button" onClick={() => handleSubmit('save')} disabled={pending} className="rounded-md bg-neutral-900 px-6 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50">
-          {pending ? 'Saving…' : mode === 'edit' ? `Update ${cfg.short}` : isInvoice && payMethod !== 'credit' && mode === 'create' ? 'Save & Record Payment' : `Save ${cfg.short}`}
+          {pending ? 'Saving…' : mode === 'edit' ? `Update ${cfg.short}` : isInvoice && received > 0 && mode === 'create' ? 'Save & Record Payment' : `Save ${cfg.short}`}
         </button>
       </div>
     </div>

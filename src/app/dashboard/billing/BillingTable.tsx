@@ -224,6 +224,7 @@ export default function BillingTable({ invoices, docType, shortLabel }: { invoic
                   </th>
                 )}
                 <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -251,6 +252,11 @@ export default function BillingTable({ invoices, docType, shortLabel }: { invoic
                     )}
                     <td className="px-4 py-3 cursor-pointer" onClick={() => window.location.href = `/dashboard/billing/${inv.id}`}>
                       <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[inv.status as InvoiceStatus] ?? STATUS_STYLES.draft}`}>{inv.status}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      {inv.status !== 'cancelled' && (
+                        <Link href={`/dashboard/billing/${inv.id}/edit`} className="rounded-md border border-neutral-200 px-2.5 py-1 text-xs hover:bg-neutral-50">Edit</Link>
+                      )}
                     </td>
                   </tr>
                 );

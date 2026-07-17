@@ -76,11 +76,18 @@ export async function createDocument(
       } catch { /* ledger optional */ }
     }
 
-    const pay = input.payment;
-    if (pay && pay.method && pay.method !== 'credit') {
-      const payAmt = Math.min(Number(pay.amount) || 0, header.total);
-      if (payAmt > 0) {
-        try {
+    // Payment(s) captured at creation — one or a split across cash/UPI/card/bank.
+    // Anything not covered stays outstanding (credit / udhaar).
+    const payLines = (input.payments?.length ? input.payments : input.payment ? [input.payment] : [])
+      .filter((p) => p && p.method && p.method !== 'credit' && (Number(p.amount) || 0) > 0);
+    if (payLines.length) {
+      try {
+        let totalPaid = 0;
+        for (const pay of payLines) {
+          const remaining = header.total - totalPaid;
+          if (remaining <= 0.001) break;
+          const payAmt = Math.min(Number(pay.amount) || 0, remaining);
+          if (payAmt <= 0) continue;
           await supabase.from('payments').insert({
             org_id: ctx.orgId,
             invoice_id: invoice.id,
@@ -91,27 +98,28 @@ export async function createDocument(
             paid_at: header.issue_date,
             created_by: ctx.userId,
           });
-          const fullyPaid = payAmt >= header.total - 0.01;
-          await supabase
-            .from('invoices')
-            .update({ status: fullyPaid ? 'paid' : 'sent', amount_paid: payAmt })
-            .eq('id', invoice.id)
-            .eq('org_id', ctx.orgId);
+          totalPaid += payAmt;
           if (header.customer_id && ctx.hasLedger) {
             await supabase.from('ledger_entries').insert({
               org_id: ctx.orgId,
               contact_id: header.customer_id,
               type: 'payment',
               amount: -Math.abs(payAmt),
-              note: `Payment on ${docNumber}`,
+              note: `Payment (${pay.method}) on ${docNumber}`,
               reference_type: 'payment',
               reference_id: invoice.id,
               entry_date: header.issue_date,
               created_by: ctx.userId,
             });
           }
-        } catch { /* payment optional */ }
-      }
+        }
+        const fullyPaid = totalPaid >= header.total - 0.01;
+        await supabase
+          .from('invoices')
+          .update({ status: fullyPaid ? 'paid' : totalPaid > 0 ? 'partial' : 'draft', amount_paid: totalPaid })
+          .eq('id', invoice.id)
+          .eq('org_id', ctx.orgId);
+      } catch { /* payment optional */ }
     }
   }
 

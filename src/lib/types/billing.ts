@@ -93,5 +93,8 @@ export type CreateInvoiceInput = {
   round_off_enabled?: boolean;
   source_doc_id?: string | null;
   items: CreateInvoiceItemInput[];
+  // Single payment (legacy) or a split across multiple sources (cash + UPI + …);
+  // whatever total isn't covered stays on credit (udhaar).
   payment?: { method: string; amount: number; reference?: string } | null;
+  payments?: { method: string; amount: number; reference?: string }[];
 };

@@ -17,7 +17,7 @@ export default async function EditInvoicePage({ params }: { params: { id: string
     supabase.from('invoices').select('*, invoice_items(*)').eq('id', params.id).eq('org_id', ctx.org.id)
       .order('sort_order', { referencedTable: 'invoice_items', ascending: true })
       .maybeSingle<Invoice & { invoice_items: InvoiceItem[] }>(),
-    supabase.from('products').select('id,name,sku,unit_price:selling_price,gst_rate').eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
+    supabase.from('products').select('id,name,sku,barcode,unit_price:selling_price,gst_rate,stock_qty,discount_pct').eq('org_id', ctx.org.id).eq('is_active', true).order('name'),
     supabase.from('contacts').select('id,name,company,email,gstin,address').eq('org_id', ctx.org.id).order('name'),
   ]);
 
@@ -43,6 +43,7 @@ export default async function EditInvoicePage({ params }: { params: { id: string
     discount_value: invoice.discount_value ?? 0,
     round_off_enabled: (invoice.round_off ?? 0) !== 0,
     items: (invoice.invoice_items ?? []).map((it) => ({
+      product_id: it.product_id ?? null,
       description: it.description,
       hsn_code: it.hsn_code ?? '',
       quantity: it.quantity,
