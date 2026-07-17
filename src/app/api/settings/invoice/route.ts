@@ -37,6 +37,15 @@ export async function PUT(req: NextRequest) {
   row.show_hsn = body.show_hsn !== false;
   row.show_logo = body.show_logo !== false;
 
+  // Custom template + traditional-layout options
+  row.use_custom_template = body.use_custom_template === true;
+  row.custom_template_html = (body.custom_template_html ?? '').toString().slice(0, 60000) || null;
+  row.invoice_title = (body.invoice_title ?? '').toString().trim().slice(0, 60) || null;
+  row.header_note = (body.header_note ?? '').toString().trim().slice(0, 300) || null;
+  row.footer_note = (body.footer_note ?? '').toString().trim().slice(0, 300) || null;
+  row.show_gst_summary = body.show_gst_summary === true;
+  row.show_signature = body.show_signature !== false;
+
   const supabase = createClient();
   const { error } = await supabase.from('org_invoice_settings').upsert(row, { onConflict: 'org_id' });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

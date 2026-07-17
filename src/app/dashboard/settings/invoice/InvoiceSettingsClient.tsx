@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from '@/lib/toast';
+import { DEFAULT_GST_TEMPLATE, TEMPLATE_PLACEHOLDERS } from '@/lib/invoice/template';
 
 type Settings = {
   bank_name?: string | null; account_name?: string | null; account_number?: string | null;
@@ -11,13 +12,17 @@ type Settings = {
   show_bank?: boolean | null; show_upi_qr?: boolean | null; enable_round_off?: boolean | null;
   template?: string | null; accent_color?: string | null; print_color_mode?: string | null;
   print_copies?: number | null; paper_size?: string | null; show_hsn?: boolean | null; show_logo?: boolean | null;
+  use_custom_template?: boolean | null; custom_template_html?: string | null;
+  invoice_title?: string | null; header_note?: string | null; footer_note?: string | null;
+  show_gst_summary?: boolean | null; show_signature?: boolean | null;
 };
 
 export default function InvoiceSettingsClient({ initial }: { initial: Settings }) {
   const [s, setS] = useState<Settings>({
     show_bank: true, show_upi_qr: true, enable_round_off: true, default_due_days: 0,
     template: 'classic', accent_color: '#171717', print_color_mode: 'color',
-    print_copies: 1, paper_size: 'A4', show_hsn: true, show_logo: true, ...initial,
+    print_copies: 1, paper_size: 'A4', show_hsn: true, show_logo: true,
+    use_custom_template: false, show_gst_summary: false, show_signature: true, ...initial,
   });
   const [saving, setSaving] = useState(false);
 
@@ -103,11 +108,40 @@ export default function InvoiceSettingsClient({ initial }: { initial: Settings }
             </select>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-5">
-          <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={s.show_logo !== false} onChange={(e) => set('show_logo', e.target.checked)} /> Show logo on documents</label>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div><label className={label}>Document title</label><input className={input} value={s.invoice_title ?? ''} onChange={(e) => set('invoice_title', e.target.value)} placeholder="TAX INVOICE" /></div>
+          <div className="sm:col-span-2"><label className={label}>Header note (FSSAI, licence, etc.)</label><input className={input} value={s.header_note ?? ''} onChange={(e) => set('header_note', e.target.value)} placeholder="FSSAI No: 1152305700…" /></div>
+          <div className="sm:col-span-3"><label className={label}>Footer note</label><input className={input} value={s.footer_note ?? ''} onChange={(e) => set('footer_note', e.target.value)} placeholder="Cheque return charges ₹550 extra…" /></div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+          <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={s.show_logo !== false} onChange={(e) => set('show_logo', e.target.checked)} /> Show logo</label>
           <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={s.show_hsn !== false} onChange={(e) => set('show_hsn', e.target.checked)} /> Show HSN/SAC column</label>
+          <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={!!s.show_gst_summary} onChange={(e) => set('show_gst_summary', e.target.checked)} /> Show GST summary table</label>
+          <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={s.show_signature !== false} onChange={(e) => set('show_signature', e.target.checked)} /> Show signature</label>
         </div>
         <p className="mt-3 text-xs text-neutral-400">Black &amp; white and multiple copies apply when printing from the app’s Print button or “Save &amp; Print”.</p>
+      </section>
+
+      {/* Custom template */}
+      <section className="rounded-xl border border-neutral-200 bg-white p-6">
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-medium">Custom template <span className="text-xs font-normal text-neutral-400">— full control</span></h2>
+          <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={!!s.use_custom_template} onChange={(e) => set('use_custom_template', e.target.checked)} /> Use custom template</label>
+        </div>
+        <p className="mb-3 text-xs text-neutral-400">Design the invoice exactly how you want using HTML. When enabled, this replaces the built-in layout on the invoice view, print &amp; PDF. Great for matching a specific format each customer wants.</p>
+        <div className="mb-2 flex flex-wrap gap-2">
+          <button type="button" onClick={() => { set('custom_template_html', DEFAULT_GST_TEMPLATE); set('use_custom_template', true); }} className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-50">Load traditional GST template</button>
+          <button type="button" onClick={() => set('custom_template_html', '')} className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-50">Clear</button>
+        </div>
+        <textarea rows={12} spellCheck={false} className={`${input} font-mono text-xs`} value={s.custom_template_html ?? ''} onChange={(e) => set('custom_template_html', e.target.value)} placeholder="Write your invoice HTML here using the placeholders below…" />
+        <details className="mt-3">
+          <summary className="cursor-pointer text-xs font-medium text-neutral-600">Available placeholders</summary>
+          <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {TEMPLATE_PLACEHOLDERS.map((p) => (
+              <div key={p.key} className="text-xs text-neutral-500"><code className="rounded bg-neutral-100 px-1 font-mono text-neutral-700">{`{{${p.key}}}`}</code> — {p.desc}</div>
+            ))}
+          </div>
+        </details>
       </section>
 
       {/* Defaults */}
