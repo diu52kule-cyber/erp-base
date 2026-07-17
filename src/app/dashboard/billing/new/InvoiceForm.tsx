@@ -73,7 +73,7 @@ const emptyItem = (gst = 18): LineItem => ({
 
 function initialItems(initial: InvoiceFormInitial | undefined, gst: number): LineItem[] {
   if (!initial?.items?.length) return [emptyItem(gst)];
-  return initial.items.map((it) => ({
+  const mapped = initial.items.map((it) => ({
     product_id: it.product_id ?? null,
     description: it.description ?? '',
     hsn_code: it.hsn_code ?? '',
@@ -82,6 +82,7 @@ function initialItems(initial: InvoiceFormInitial | undefined, gst: number): Lin
     gst_rate: it.gst_rate ?? gst,
     discount_pct: it.discount_type === 'percent' ? (it.discount_value ?? 0) : 0,
   }));
+  return [...mapped, emptyItem(gst)]; // always keep a trailing empty row to type into
 }
 
 const CURRENCIES = Object.keys(CURRENCY_SYMBOLS);
@@ -156,6 +157,20 @@ export default function InvoiceForm({
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
   }
 
+  // Keep exactly one empty row at the bottom so there's always somewhere to type
+  // the next item (like Vyapar/Marg) — a fresh empty line appears as you fill one.
+  const ensureTrailing = (list: LineItem[]): LineItem[] => {
+    const last = list[list.length - 1];
+    return last && last.description.trim() ? [...list, emptyItem(defaultGst)] : list;
+  };
+
+  function onFormKeyDown(e: React.KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit('save'); }
+    else if (e.altKey && (e.key === 'n' || e.key === 'N') && mode === 'create') { e.preventDefault(); handleSubmit('new'); }
+    else if (e.altKey && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); handleSubmit('print'); }
+    else if (e.altKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); setItems((prev) => [...prev, emptyItem(defaultGst)]); }
+  }
+
   function applyTerm(days: number) {
     setForm((f) => ({ ...f, due_date: addDays(f.issue_date || today(), days) }));
   }
@@ -173,9 +188,8 @@ export default function InvoiceForm({
 
   async function handleSubmit(action: 'save' | 'new' | 'print') {
     if (!form.customer_name.trim()) { setError('Customer name is required'); return; }
-    if (!items.length || items.some((i) => !i.description.trim())) {
-      setError('All line items must have a description'); return;
-    }
+    const filled = items.filter((i) => i.description.trim()); // ignore the trailing empty row(s)
+    if (!filled.length) { setError('Add at least one line item'); return; }
     setError(null);
     setPending(true);
 
@@ -196,7 +210,7 @@ export default function InvoiceForm({
       discount_type: billDiscType || null,
       discount_value: billDiscValue,
       round_off_enabled: roundOff,
-      items: items.map((i) => ({
+      items: filled.map((i) => ({
         product_id: i.product_id ?? null,
         description: i.description,
         hsn_code: i.hsn_code.trim() || null,
@@ -233,7 +247,7 @@ export default function InvoiceForm({
   const inputCls = 'w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onKeyDown={onFormKeyDown}>
       {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
       {contactCredit && (() => {
         const remaining = contactCredit.limit - contactCredit.outstanding;
@@ -354,8 +368,8 @@ export default function InvoiceForm({
               <div key={index} className="space-y-1">
                 <div className="grid grid-cols-[1fr_80px_64px_96px_64px_80px_96px_28px] items-center gap-2">
                   <ProductPicker value={item.description} products={products}
-                    onChange={(v) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, description: v, product_id: null, stock_qty: null } : it))}
-                    onPick={(p) => setItems((prev) => prev.map((it, j) => j === index ? { ...it, product_id: p.id, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate, stock_qty: p.stock_qty ?? null } : it))}
+                    onChange={(v) => setItems((prev) => ensureTrailing(prev.map((it, j) => j === index ? { ...it, description: v, product_id: null, stock_qty: null } : it)))}
+                    onPick={(p) => setItems((prev) => ensureTrailing(prev.map((it, j) => j === index ? { ...it, product_id: p.id, description: p.name, unit_price: p.unit_price, gst_rate: p.gst_rate, stock_qty: p.stock_qty ?? null } : it)))}
                     placeholder="Item description" />
                   <input type="text" value={item.hsn_code} onChange={(e) => updateItem(index, 'hsn_code', e.target.value.replace(/\D/g, ''))} placeholder="9983" maxLength={8} className="rounded-lg border border-neutral-200 px-2 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900" />
                   <div>
@@ -443,6 +457,10 @@ export default function InvoiceForm({
         <label className="mb-1 block text-sm font-medium text-neutral-700">Terms &amp; Conditions</label>
         <textarea value={form.terms} onChange={(e) => setForm((f) => ({ ...f, terms: e.target.value }))} rows={2} placeholder="Payment terms, warranty, jurisdiction, etc." className={inputCls} />
       </div>
+
+      <p className="text-right text-[11px] text-neutral-400">
+        Shortcuts: <b>Ctrl+Enter</b> save · <b>Alt+N</b> new · <b>Alt+P</b> print · <b>Alt+L</b> add line · <b>Enter</b> next field · <b>↑ ↓</b> pick from list
+      </p>
 
       {/* Actions */}
       <div className="flex flex-wrap justify-end gap-3">

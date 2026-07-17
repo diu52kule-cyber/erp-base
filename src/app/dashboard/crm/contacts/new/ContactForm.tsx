@@ -9,26 +9,27 @@ const LEAD_SOURCES = [
   'trade_show', 'walk_in', 'whatsapp', 'other',
 ] as const;
 
-export default function ContactForm() {
+type ContactFormValues = {
+  name: string; email: string; phone: string; type: string; company: string;
+  gstin: string; address: string; notes: string; tags: string; lead_source: string; opening_balance: string;
+};
+
+const EMPTY_CONTACT: ContactFormValues = {
+  name: '', email: '', phone: '', type: 'lead', company: '', gstin: '',
+  address: '', notes: '', tags: '', lead_source: '', opening_balance: '',
+};
+
+export default function ContactForm({ mode = 'create', contactId, initial }: {
+  mode?: 'create' | 'edit'; contactId?: string; initial?: Partial<ContactFormValues>;
+}) {
+  const isEdit = mode === 'edit';
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<{ id: string; name: string } | null>(null);
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    type: 'lead' as string,
-    company: '',
-    gstin: '',
-    address: '',
-    notes: '',
-    tags: '',
-    lead_source: '',
-    opening_balance: '',
-  });
-  const { clearDraft, draftRestored } = useFormDraft('contact-new', form, setForm);
+  const [form, setForm] = useState<ContactFormValues>({ ...EMPTY_CONTACT, ...initial });
+  const { clearDraft, draftRestored } = useFormDraft(isEdit ? `contact-edit-${contactId}` : 'contact-new', form, setForm);
 
-  function set(field: string, value: string) {
+  function set(field: keyof ContactFormValues, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
@@ -38,8 +39,8 @@ export default function ContactForm() {
     setDuplicate(null);
     setPending(true);
     try {
-      const res = await fetch('/api/contacts', {
-        method: 'POST',
+      const res = await fetch(isEdit ? `/api/contacts/${contactId}` : '/api/contacts', {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
@@ -51,7 +52,7 @@ export default function ContactForm() {
       else {
         if (data.duplicate) setDuplicate(data.duplicate);
         clearDraft();
-        window.location.href = `/dashboard/crm/contacts/${data.id}`;
+        window.location.href = isEdit ? `/dashboard/crm/contacts/${contactId}` : `/dashboard/crm/contacts/${data.id}`;
       }
     } catch {
       setError('Failed to save contact');
@@ -164,7 +165,7 @@ export default function ContactForm() {
             />
           </div>
 
-          {form.type === 'customer' && (
+          {form.type === 'customer' && !isEdit && (
             <div>
               <label className="mb-1 block text-sm text-neutral-600">Opening Balance (₹)</label>
               <input
@@ -222,7 +223,7 @@ export default function ContactForm() {
           disabled={pending}
           className="rounded-md bg-neutral-900 px-6 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50"
         >
-          {pending ? 'Saving…' : 'Add Contact'}
+          {pending ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Contact'}
         </button>
       </div>
     </div>

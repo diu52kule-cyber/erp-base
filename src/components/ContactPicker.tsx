@@ -1,10 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { moveFocus } from '@/lib/focusNav';
 
 export type PickContact = { id: string; name: string; company?: string | null; email?: string | null; gstin?: string | null; address?: string | null; credit_limit?: number | null; outstanding?: number | null };
 
 // Customer/contact autocomplete. Typing filters the CRM contacts; picking one
-// links the record (customer_id) and fills name/email/GSTIN/address.
+// links the record (customer_id) and fills name/email/GSTIN/address. Keyboard:
+//   ↓/↑ move through matches · Enter picks & advances · Esc closes. Free text ok.
 export default function ContactPicker({
   value, onChange, onPick, contacts, placeholder = 'Customer name', className = '',
 }: {
@@ -16,16 +18,44 @@ export default function ContactPicker({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
   const q = value.trim().toLowerCase();
   const matches = (q
     ? contacts.filter((c) => c.name.toLowerCase().includes(q) || (c.company ?? '').toLowerCase().includes(q))
     : contacts).slice(0, 8);
 
+  useEffect(() => { setHi(-1); }, [value]);
+
+  function choose(c: PickContact) {
+    onPick(c);
+    setOpen(false);
+    setHi(-1);
+    if (inputRef.current) moveFocus(inputRef.current, 1);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!open) {
+      if (e.key === 'ArrowDown' && matches.length) { e.preventDefault(); e.stopPropagation(); setOpen(true); setHi(0); }
+      return;
+    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); setHi((h) => Math.min(matches.length - 1, h + 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); setHi((h) => Math.max(-1, h - 1)); }
+    else if (e.key === 'Enter') {
+      e.preventDefault(); e.stopPropagation();
+      if (hi >= 0 && matches[hi]) choose(matches[hi]);
+      else { setOpen(false); if (inputRef.current) moveFocus(inputRef.current, 1); }
+    }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setOpen(false); }
+  }
+
   return (
     <div className="relative">
       <input
-        type="text" value={value}
+        ref={inputRef} type="text" value={value}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onKeyDown={onKeyDown}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
@@ -33,10 +63,11 @@ export default function ContactPicker({
       />
       {open && matches.length > 0 && (
         <div className="absolute left-0 z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
-          {matches.map((c) => (
+          {matches.map((c, i) => (
             <button key={c.id} type="button"
-              onMouseDown={(e) => { e.preventDefault(); onPick(c); setOpen(false); }}
-              className="block w-full px-3 py-2 text-left text-sm hover:bg-neutral-50">
+              onMouseDown={(e) => { e.preventDefault(); choose(c); }}
+              onMouseEnter={() => setHi(i)}
+              className={`block w-full px-3 py-2 text-left text-sm ${i === hi ? 'bg-neutral-100' : 'hover:bg-neutral-50'}`}>
               <span className="font-medium">{c.name}</span>
               {c.company ? <span className="text-neutral-400"> · {c.company}</span> : null}
             </button>

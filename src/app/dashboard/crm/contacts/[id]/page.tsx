@@ -149,6 +149,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           >
             + New Deal
           </Link>
+          <Link href={`/dashboard/crm/contacts/${id}/edit`} className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">✏️ Edit</Link>
           <ArchiveButton table="contacts" id={id} archived={!!(c as any).archived_at} redirectTo="/dashboard/crm" />
         </div>
       </div>

@@ -10,25 +10,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json();
-  const { name, email, phone, type, company, gstin, address, notes } = body;
+  const { name, email, phone, type, company, gstin, address, notes, tags, lead_source } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 });
   }
 
+  const update: Record<string, unknown> = {
+    name: name.trim(),
+    email: email || null,
+    phone: phone || null,
+    type: type || 'lead',
+    company: company || null,
+    gstin: gstin || null,
+    address: address || null,
+    notes: notes || null,
+  };
+  if (tags !== undefined) update.tags = String(tags || '').split(',').map((t) => t.trim()).filter(Boolean);
+  if (lead_source !== undefined) update.lead_source = lead_source || null;
+
   const supabase = createClient();
   const { error } = await supabase
     .from('contacts')
-    .update({
-      name: name.trim(),
-      email: email || null,
-      phone: phone || null,
-      type: type || 'lead',
-      company: company || null,
-      gstin: gstin || null,
-      address: address || null,
-      notes: notes || null,
-    })
+    .update(update)
     .eq('id', id)
     .eq('org_id', ctx.org.id);
 
