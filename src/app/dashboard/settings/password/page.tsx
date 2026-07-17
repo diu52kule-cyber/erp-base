@@ -8,6 +8,9 @@ export default function ChangePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -55,6 +58,24 @@ export default function ChangePasswordPage() {
     setSuccess(true);
     setForm({ current: '', next: '', confirm: '' });
     setLoading(false);
+  }
+
+  // Forgot the current password? Email a reset link to the signed-in user so
+  // they can set a new one without knowing the old one.
+  async function sendReset() {
+    setResetLoading(true);
+    setResetError(null);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) { setResetError('Could not fetch your account email'); setResetLoading(false); return; }
+    const res = await fetch('/api/auth/forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email }),
+    });
+    setResetLoading(false);
+    if (!res.ok) { setResetError('Something went wrong. Please try again.'); return; }
+    setResetSent(true);
   }
 
   return (
@@ -135,6 +156,32 @@ export default function ChangePasswordPage() {
           </button>
         </div>
       </form>
+
+      {/* Forgot current password → email a reset link */}
+      <div className="max-w-md rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+        {resetSent ? (
+          <p className="flex items-start gap-2 text-sm text-green-700 dark:text-green-400">
+            <span>✓</span>
+            <span>We&apos;ve emailed you a password‑reset link. Open it to set a new password without needing your current one.</span>
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Forgot your current password?</p>
+              <p className="text-xs text-neutral-500">We&apos;ll email a reset link to your account address.</p>
+              {resetError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{resetError}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={sendReset}
+              disabled={resetLoading}
+              className="shrink-0 rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-white disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+            >
+              {resetLoading ? 'Sending…' : 'Email me a reset link'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
